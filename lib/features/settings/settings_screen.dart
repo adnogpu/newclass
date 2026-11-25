@@ -118,7 +118,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 28),
           Center(
             child: Text(
-              'newclass 1.0.1',
+              'newclass 1.0.2',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
               ),
