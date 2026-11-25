@@ -1,6 +1,7 @@
 package com.adnogpu.newclass
 
 import android.content.Intent
+import android.os.Build
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -33,6 +34,20 @@ class MainActivity : FlutterActivity() {
                             result.error("bad_args", "missing path", null)
                         } else {
                             installApk(path, result)
+                        }
+                    }
+                    "appVersion" -> {
+                        try {
+                            val info = packageManager.getPackageInfo(packageName, 0)
+                            val code = if (Build.VERSION.SDK_INT >= 28) {
+                                info.longVersionCode.toInt()
+                            } else {
+                                @Suppress("DEPRECATION")
+                                info.versionCode
+                            }
+                            result.success(mapOf("code" to code))
+                        } catch (error: Exception) {
+                            result.error("version_failed", error.message, null)
                         }
                     }
                     else -> result.notImplemented()

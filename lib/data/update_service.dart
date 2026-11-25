@@ -1,7 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:package_info_plus/package_info_plus.dart';
 
 class UpdateException implements Exception {
   const UpdateException(this.message);
@@ -78,6 +79,7 @@ class UpdateService {
   static const proxyBase = 'https://gh-proxy.com/';
   static const repoBase = 'https://github.com/adnogpu/newclass';
   static const _versionPath = '/releases/latest/download/version.json';
+  static const _channel = MethodChannel('newclass/native');
 
   final http.Client _client;
   final Duration timeout;
@@ -115,9 +117,24 @@ class UpdateService {
 
   Future<UpdateInfo?> check() async {
     final latest = await fetchLatest();
-    final current = await PackageInfo.fromPlatform();
-    final currentCode = int.tryParse(current.buildNumber) ?? 0;
+    final currentCode = await _currentVersionCode();
     return isNewer(latest.versionCode, currentCode) ? latest : null;
+  }
+
+  Future<int> _currentVersionCode() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return 0;
+    }
+    try {
+      final result = await _channel.invokeMapMethod<String, dynamic>(
+        'appVersion',
+      );
+      final code = result?['code'];
+      if (code is num) return code.toInt();
+      return int.tryParse('$code') ?? 0;
+    } catch (_) {
+      return 0;
+    }
   }
 
   static bool isNewer(int remote, int current) => remote > current;
