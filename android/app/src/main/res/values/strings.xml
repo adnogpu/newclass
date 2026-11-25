@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">newclass</string>
+    <string name="widget_schedule_title">今日课表</string>
+    <string name="widget_schedule_unsynced">尚未同步课表</string>
+    <string name="widget_schedule_empty">今天没有课程</string>
+    <string name="widget_schedule_description">显示今天的课程</string>
+    <string name="widget_electricity_title">寝室电费</string>
+    <string name="widget_electricity_unit">度</string>
+    <string name="widget_electricity_none">打开 newclass 查询</string>
+    <string name="widget_electricity_updated">%1$s 更新</string>
+    <string name="widget_electricity_description">显示寝室剩余电量</string>
+    <string name="widget_value_placeholder">—</string>
+</resources>
