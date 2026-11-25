@@ -104,9 +104,62 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NOTES="Automated build of newclass ${{ steps.version.outputs.name }} (build ${{ github.run_number }}). Commit: ${{ github.sha }}"
-          if gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload latest build/release/newclass.apk build/release/version.json --repo "$GITHUB_REPOSITORY" --clobber
-            gh release edit latest --repo "$GITHUB_REPOSITORY" --title "newclass latest" --notes "$NOTES" --latest
-          else
-            gh release create latest build/release/newclass.apk build/release/version.json --repo "$GITHUB_REPOSITORY" --title "newclass latest" --notes "$NOTES" --latest
+
+          if ! gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            created=0
+            for attempt in 1 2 3 4 5; do
+              if gh release create latest \
+                build/release/newclass.apk build/release/version.json \
+                --repo "$GITHUB_REPOSITORY" \
+                --title "newclass latest" \
+                --notes "$NOTES" \
+                --latest; then
+                created=1
+                break
+              fi
+              if gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+                created=1
+                break
+              fi
+              echo "release create failed (attempt $attempt), retrying..."
+              sleep $((attempt * 10))
+            done
+            if [ "$created" -ne 1 ]; then
+              echo "could not create release"
+              exit 1
+            fi
+          fi
+
+          uploaded=0
+          for attempt in 1 2 3 4 5; do
+            if gh release upload latest \
+              build/release/newclass.apk build/release/version.json \
+              --repo "$GITHUB_REPOSITORY" --clobber; then
+              uploaded=1
+              break
+            fi
+            echo "asset upload failed (attempt $attempt), retrying..."
+            sleep $((attempt * 10))
+          done
+          if [ "$uploaded" -ne 1 ]; then
+            echo "could not upload release assets"
+            exit 1
+          fi
+
+          edited=0
+          for attempt in 1 2 3 4 5; do
+            if gh release edit latest \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "newclass latest" \
+              --notes "$NOTES" \
+              --latest; then
+              edited=1
+              break
+            fi
+            echo "release metadata update failed (attempt $attempt), retrying..."
+            sleep $((attempt * 10))
+          done
+          if [ "$edited" -ne 1 ]; then
+            echo "could not update release metadata"
+            exit 1
           fi
