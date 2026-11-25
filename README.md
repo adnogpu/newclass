@@ -8,7 +8,7 @@
 - **电费**：按宿舍房间号匿名查询剩余电量，无需登录；自动解析楼栋/楼层，7 号楼会弹出南/中/北楼选择；下拉刷新，并缓存最近一次结果。
 - **桌面小部件**：Android 桌面提供「今日课表」与「寝室电费」两个 2×2 独立组件。今日课表显示当天尚未结束的课程，课程结束后自动隐藏；设置页可请求添加到桌面，小米/Redmi 需先允许「桌面快捷方式」特殊权限。不支持的桌面会给出手动添加步骤。电费由后台任务每 3 小时刷新一次。
 - **设置**：教务账号、密码、宿舍房间号、开学日期均可随时修改；设置页提供「检查更新」。
-- **自动更新**：启动时经 `gh-proxy.com` 检查最新 Release，下载 APK 并校验 SHA-256 后交给系统安装器；设置页可手动检查。
+- **自动更新**：启动时经 `cdn.gh-proxy.org` 检查最新 Release，下载 APK 并校验 SHA-256 后交给系统安装器；设置页可手动检查。
 
 应用只与学校系统通信：CAS / 教务系统用于课表，电费接口用于余额；更新检查只访问 GitHub（经 gh-proxy 加速）。没有自建服务器，没有统计、广告或追踪。
 
@@ -36,8 +36,8 @@ flutter build apk --release
 ## 自动发布与更新
 
 - 每次推送到 `main`，Actions 会以 `github.run_number` 作为 Android `versionCode` 构建，生成 `version.json`（版本名、版本号、大小、SHA-256），并更新固定 `latest` Release，资产为 `newclass.apk` 与 `version.json`。
-- 应用启动或点「检查更新」时，通过 `https://gh-proxy.com/` 访问 `releases/download/latest/version.json`（失败时回退直连 GitHub）。远端 `versionCode` 大于当前版本时提示更新。
-- 下载同样走 gh-proxy，完成后校验 SHA-256；若代理返回的文件校验不符，会自动改用 GitHub 直连重新下载。校验通过后调用系统安装器覆盖安装。
+- 应用启动或点「检查更新」时，通过 `https://cdn.gh-proxy.org/` 访问 `releases/download/latest/version.json`（失败时回退直连 GitHub）。远端 `versionCode` 大于当前版本时提示更新。
+- 下载同样走 CDN 代理，完成后校验 SHA-256；若代理返回的文件校验不符，会自动改用 GitHub 直连重新下载。校验通过后调用系统安装器覆盖安装。
 - 更新包使用与当前版本相同的固定签名，因此无需卸载，数据会保留。
 - 只有 Android 支持应用内更新；iOS/Web 会提示不支持自动安装。
 
@@ -61,7 +61,7 @@ GitHub Actions 使用仓库 Secrets 中的固定签名密钥构建（`ANDROID_KE
 
 - 教务账号、密码、登录 Cookie 使用系统安全存储（Android Keystore / iOS Keychain）保存，仅在本机。
 - 验证码 OCR 使用 ML Kit 在设备本地完成，验证码图片不会上传到第三方。
-- 更新检查与下载只访问 GitHub / `gh-proxy.com`，不包含任何个人数据；安装包下载后会校验 SHA-256。
+- 更新检查与下载只访问 GitHub / `cdn.gh-proxy.org`，不包含任何个人数据；安装包下载后会校验 SHA-256。
 - 课表与电费缓存保存在应用私有目录；不会上传到任何第三方。
 - 仓库不包含任何账号、密码、个人课表或校内抓取脚本。`query_by_room.py` 与 `query_class/` 仅作本地参考，已在 `.gitignore` 中排除。
 - 仅适用于南京理工大学泰州科技学院（NUSTTI）的校内接口，请使用本人账号。
@@ -69,7 +69,7 @@ GitHub Actions 使用仓库 Secrets 中的固定签名密钥构建（`ANDROID_KE
 ## 已知限制
 
 - 验证码优先自动识别；OCR 未通过或非 Android 设备时回退到手动输入，不会重复用同一验证码尝试。
-- 自动更新需要用户在系统安装器中确认，无法静默安装；下载源经 gh-proxy 加速，校验失败时回退 GitHub 直连。
+- 自动更新需要用户在系统安装器中确认，无法静默安装；下载源经 CDN 代理加速，校验失败时回退 GitHub 直连。
 - 部分桌面（如部分 MIUI/HyperOS）不实现应用内添加组件接口，或需要先允许「桌面快捷方式」特殊权限；设置页会显示对应步骤并可直接打开应用设置。
 - iOS 桌面小部件与后台定时刷新尚未实现（需要 macOS/Xcode）。
 - Actions 构建的 APK 使用调试签名，适合自用与测试；正式分发请配置自己的签名。

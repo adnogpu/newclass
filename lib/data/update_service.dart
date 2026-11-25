@@ -76,7 +76,7 @@ class UpdateService {
     this.timeout = const Duration(seconds: 15),
   }) : _client = client ?? http.Client();
 
-  static const proxyBase = 'https://gh-proxy.com/';
+  static const proxyBase = 'https://cdn.gh-proxy.org/';
   static const repoBase = 'https://github.com/adnogpu/newclass';
   static const _versionPath = '/releases/download/latest/version.json';
   static const _downloadPath = '/releases/download/latest/';
