@@ -9,6 +9,8 @@ import '../../core/widgets/widget_data.dart';
 import '../../data/update_service.dart';
 import '../update/update_dialog.dart';
 
+const _nativeChannel = MethodChannel('newclass/native');
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -219,8 +221,12 @@ class SettingsScreen extends StatelessWidget {
     if (!context.mounted) return;
     if (pinned) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('已发送添加请求；若桌面没有弹窗，请长按桌面添加'),
+        SnackBar(
+          content: const Text('已请求添加；若没有弹窗，请允许「桌面快捷方式」权限后重试'),
+          action: SnackBarAction(
+            label: '设置',
+            onPressed: _openAppSettings,
+          ),
         ),
       );
       return;
@@ -228,15 +234,24 @@ class SettingsScreen extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('手动添加组件'),
-        content: const Text(
-          '当前桌面不支持应用内添加。\n\n'
-          '1. 长按桌面空白处\n'
-          '2. 选择「添加小部件 / 小工具」\n'
-          '3. 找到 newclass\n'
-          '4. 选择「今日课表」或「寝室电费」',
+        title: const Text('添加组件'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '当前桌面未接受应用内添加请求。\n\n'
+            '小米/Redmi：应用信息 → 权限管理 → 特殊权限 → '
+            '桌面快捷方式，允许后重试。\n\n'
+            '也可以手动添加：长按桌面空白处 → 添加小部件 → '
+            'newclass → 今日课表/寝室电费。',
+          ),
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _openAppSettings();
+            },
+            child: const Text('打开应用设置'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('知道了'),
@@ -244,6 +259,12 @@ class SettingsScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _openAppSettings() async {
+    try {
+      await _nativeChannel.invokeMethod('openAppSettings');
+    } catch (_) {}
   }
 
   Future<void> _checkUpdate(BuildContext context) async {
