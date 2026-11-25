@@ -1,8 +1,11 @@
 package com.adnogpu.newclass
 
+import android.content.Intent
+import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -24,9 +27,46 @@ class MainActivity : FlutterActivity() {
                             )
                         }
                     }
+                    "installApk" -> {
+                        val path = call.argument<String>("path")
+                        if (path.isNullOrBlank()) {
+                            result.error("bad_args", "missing path", null)
+                        } else {
+                            installApk(path, result)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun installApk(path: String, result: MethodChannel.Result) {
+        try {
+            val file = File(path).canonicalFile
+            val cacheRoot = cacheDir.canonicalFile
+            if (!file.path.startsWith(cacheRoot.path + File.separator)) {
+                throw IllegalArgumentException("invalid path")
+            }
+            if (!file.exists()) {
+                throw IllegalArgumentException("file missing")
+            }
+            val uri = FileProvider.getUriForFile(
+                this,
+                "$packageName.fileprovider",
+                file,
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_ACTIVITY_NEW_TASK,
+                )
+            }
+            startActivity(intent)
+            result.success(true)
+        } catch (error: Exception) {
+            result.error("install_failed", error.message, null)
+        }
     }
 
     override fun onDestroy() {

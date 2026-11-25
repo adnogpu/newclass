@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../core/models/schedule_data.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/widgets/widget_data.dart';
+import '../../data/update_service.dart';
+import '../update/update_dialog.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -117,11 +119,9 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           Center(
-            child: Text(
-              'newclass 1.0.2',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
-              ),
+            child: TextButton(
+              onPressed: () => _checkUpdate(context),
+              child: const Text('newclass 1.0.2 · 检查更新'),
             ),
           ),
         ],
@@ -220,6 +220,30 @@ class SettingsScreen extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('当前桌面不支持自动添加，请长按桌面添加')),
     );
+  }
+
+  Future<void> _checkUpdate(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final service = UpdateService();
+    try {
+      final info = await service.check();
+      if (!context.mounted) return;
+      if (info == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('已是最新版本')),
+        );
+      } else {
+        await showUpdateDialog(context, info);
+      }
+    } on UpdateException catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('检查更新失败')),
+      );
+    } finally {
+      service.close();
+    }
   }
 
   Future<String?> _showTextEditor(

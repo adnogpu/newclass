@@ -10,10 +10,12 @@ import 'core/widgets/widget_bridge.dart';
 import 'core/widgets/widget_data.dart';
 import 'data/electricity_service.dart';
 import 'data/schedule_service.dart';
+import 'data/update_service.dart';
 import 'features/electricity/electricity_screen.dart';
 import 'features/schedule/schedule_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/setup/setup_screen.dart';
+import 'features/update/update_dialog.dart';
 import 'theme/app_theme.dart';
 
 class NewClassApp extends StatefulWidget {
@@ -38,6 +40,7 @@ class NewClassApp extends StatefulWidget {
 
 class _NewClassAppState extends State<NewClassApp> {
   final ValueNotifier<int> _tabIndex = ValueNotifier<int>(0);
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   StreamSubscription<Uri?>? _widgetClickSubscription;
 
   @override
@@ -67,6 +70,24 @@ class _NewClassAppState extends State<NewClassApp> {
         balance: widget.store.balance,
       );
     } catch (_) {}
+    if (widget.store.isConfigured) {
+      await _checkForUpdate();
+    }
+  }
+
+  Future<void> _checkForUpdate() async {
+    final service = UpdateService();
+    try {
+      final info = await service.check();
+      if (!mounted || info == null) return;
+      final context = _navigatorKey.currentContext;
+      if (context == null || !context.mounted) return;
+      await showUpdateDialog(context, info);
+    } catch (_) {
+      // Update checks are best-effort and must not disturb startup.
+    } finally {
+      service.close();
+    }
   }
 
   void _applyWidgetUri(Uri? uri) {
@@ -99,6 +120,7 @@ class _NewClassAppState extends State<NewClassApp> {
       child: MaterialApp(
         title: 'newclass',
         debugShowCheckedModeBanner: false,
+        navigatorKey: _navigatorKey,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         themeMode: ThemeMode.system,

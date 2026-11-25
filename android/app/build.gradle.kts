@@ -69,6 +69,7 @@ kotlin {
 }
 
 dependencies {
+    implementation("androidx.core:core:1.19.1")
     implementation("com.google.mlkit:text-recognition:16.0.1")
 }
 

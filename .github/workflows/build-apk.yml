@@ -3,10 +3,14 @@ name: Build APK
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - "**.md"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -32,6 +36,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Read version
+        id: version
+        run: |
+          VERSION_NAME=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml | head -1)
+          echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Analyze
         run: flutter analyze
 
@@ -56,12 +66,47 @@ jobs:
           fi
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release \
+            --build-name="${{ steps.version.outputs.name }}" \
+            --build-number="${{ github.run_number }}"
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p build/release
+          cp build/app/outputs/flutter-apk/app-release.apk build/release/newclass.apk
+          SHA256=$(sha256sum build/release/newclass.apk | awk '{print $1}')
+          SIZE=$(stat -c%s build/release/newclass.apk)
+          cat > build/release/version.json <<EOF
+          {
+            "versionName": "${{ steps.version.outputs.name }}",
+            "versionCode": ${{ github.run_number }},
+            "apk": "newclass.apk",
+            "sha256": "$SHA256",
+            "size": $SIZE,
+            "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "notes": "Automated build of commit ${{ github.sha }}"
+          }
+          EOF
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: newclass-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: |
+            build/release/newclass.apk
+            build/release/version.json
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish rolling release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NOTES="Automated build of newclass ${{ steps.version.outputs.name }} (build ${{ github.run_number }}). Commit: ${{ github.sha }}"
+          if gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload latest build/release/newclass.apk build/release/version.json --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit latest --repo "$GITHUB_REPOSITORY" --title "newclass latest" --notes "$NOTES" --latest
+          else
+            gh release create latest build/release/newclass.apk build/release/version.json --repo "$GITHUB_REPOSITORY" --title "newclass latest" --notes "$NOTES" --latest
+          fi
