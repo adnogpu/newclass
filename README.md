@@ -41,6 +41,12 @@ flutter build apk --release
 - **小部件**：`home_widget` 写入共享偏好，原生 `RemoteViews` 渲染；今日课表保存整学期课程与开学日，原生在渲染时过滤当天课程，`DATE_CHANGED` 时自动更新。
 - **后台刷新**：WorkManager 每 3 小时查询一次电费并更新两个组件；失败保留上次缓存。
 
+## 签名
+
+GitHub Actions 使用仓库 Secrets 中的固定签名密钥构建（`ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD`），密钥不会提交到仓库。这样后续 Actions 构建的 APK 可以直接覆盖安装。
+
+本地构建时，在 `android/app/` 放 `key.properties` 与对应 `.jks` 即使用同一签名；没有时自动回退到 debug 签名。
+
 ## 隐私
 
 - 教务账号、密码、登录 Cookie 使用系统安全存储（Android Keystore / iOS Keychain）保存，仅在本机。
