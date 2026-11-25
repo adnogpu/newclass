@@ -122,6 +122,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       if (data == null) {
         var challenge = await _scheduleService.fetchCaptcha();
         final ocrAnswer = await CaptchaOcr.solve(challenge.imageBytes);
+        String? notice;
         if (ocrAnswer != null) {
           try {
             data = await _scheduleService.loginAndSync(
@@ -129,13 +130,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               answer: '$ocrAnswer',
             );
           } on CaptchaRejectedException {
-            _snack('自动识别未通过，请手动输入');
+            notice = '自动识别未通过，请手动输入';
             challenge = await _scheduleService.fetchCaptcha();
           }
+        } else if (CaptchaOcr.isSupported) {
+          notice = '自动识别未成功，请手动输入';
         }
         while (mounted && data == null) {
           if (!mounted) return;
-          final answer = await showCaptchaSheet(context, challenge);
+          final answer = await showCaptchaSheet(
+            context,
+            challenge,
+            notice: notice,
+          );
           if (answer == null) return;
           try {
             data = await _scheduleService.loginAndSync(
@@ -143,7 +150,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               answer: '$answer',
             );
           } on CaptchaRejectedException {
-            _snack('验证码错误，请重试');
+            notice = '验证码错误，请重新输入';
             challenge = await _scheduleService.fetchCaptcha();
           }
         }

@@ -34,11 +34,19 @@ class ScheduleWidgetData {
               'time': course.timeLabel.isNotEmpty
                   ? course.timeLabel
                   : course.timeRange,
+              'endTime': _endTime(course.timeRange),
               'weeks': course.weeks,
             },
           )
           .toList(),
     };
+  }
+
+  static String _endTime(String timeRange) {
+    final parts = timeRange.split('-');
+    if (parts.length != 2) return '';
+    final end = parts[1].trim();
+    return RegExp(r'^\d{1,2}:\d{2}$').hasMatch(end) ? end : '';
   }
 
   static String _isoDate(DateTime date) =>

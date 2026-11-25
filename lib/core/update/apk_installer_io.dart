@@ -17,13 +17,41 @@ Future<bool> downloadAndInstallApk(
 
   final directory = await getTemporaryDirectory();
   final file = File('${directory.path}/newclass-${info.versionCode}.apk');
-  if (await file.exists()) {
-    await file.delete();
+  Object? lastError;
+  for (final uri in [
+    Uri.parse(info.downloadUrl),
+    Uri.parse(info.directDownloadUrl),
+  ]) {
+    try {
+      if (await file.exists()) {
+        await file.delete();
+      }
+      await _download(uri, file, info, onProgress);
+      final started = await _channel.invokeMethod<bool>(
+        'installApk',
+        {'path': file.path},
+      );
+      return started ?? false;
+    } on UpdateException catch (error) {
+      lastError = error;
+    } on Exception catch (error) {
+      lastError = UpdateException('下载失败：${error.runtimeType}');
+    }
   }
+  throw lastError is UpdateException
+      ? lastError
+      : const UpdateException('下载失败，请稍后重试');
+}
 
+Future<void> _download(
+  Uri uri,
+  File file,
+  UpdateInfo info,
+  void Function(double? progress) onProgress,
+) async {
   final client = http.Client();
   try {
-    final request = http.Request('GET', Uri.parse(info.downloadUrl));
+    final request = http.Request('GET', uri);
     final response = await client
         .send(request)
         .timeout(const Duration(seconds: 30));
@@ -55,14 +83,8 @@ Future<bool> downloadAndInstallApk(
     final digest = digestSink.value?.toString().toLowerCase();
     if (digest == null || digest != info.sha256.toLowerCase()) {
       await file.delete();
-      throw const UpdateException('安装包校验失败，请重试');
+      throw const UpdateException('安装包校验失败，尝试备用线路');
     }
-
-    final started = await _channel.invokeMethod<bool>(
-      'installApk',
-      {'path': file.path},
-    );
-    return started ?? false;
   } finally {
     client.close();
   }

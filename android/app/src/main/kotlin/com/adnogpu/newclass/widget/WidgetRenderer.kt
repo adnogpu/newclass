@@ -11,6 +11,9 @@ import es.antonborri.home_widget.HomeWidgetPlugin
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 object WidgetRenderer {
@@ -19,39 +22,33 @@ object WidgetRenderer {
     private val weekdayLabels = arrayOf(
         "周一", "周二", "周三", "周四", "周五", "周六", "周日",
     )
+    private val timeFormatter = DateTimeFormatter.ofPattern("H:mm")
 
     private val scheduleRowIds = intArrayOf(
         R.id.widget_schedule_row_1,
         R.id.widget_schedule_row_2,
-        R.id.widget_schedule_row_3,
-        R.id.widget_schedule_row_4,
     )
     private val scheduleTimeIds = intArrayOf(
         R.id.widget_schedule_time_1,
         R.id.widget_schedule_time_2,
-        R.id.widget_schedule_time_3,
-        R.id.widget_schedule_time_4,
     )
     private val scheduleNameIds = intArrayOf(
         R.id.widget_schedule_name_1,
         R.id.widget_schedule_name_2,
-        R.id.widget_schedule_name_3,
-        R.id.widget_schedule_name_4,
     )
     private val scheduleRoomIds = intArrayOf(
         R.id.widget_schedule_room_1,
         R.id.widget_schedule_room_2,
-        R.id.widget_schedule_room_3,
-        R.id.widget_schedule_room_4,
     )
 
-    fun renderSchedule(context: Context, views: RemoteViews) {
+    /** Renders the schedule widget and returns the next epoch millis to refresh. */
+    fun renderSchedule(context: Context, views: RemoteViews): Long? {
         val prefs = HomeWidgetPlugin.getData(context)
         val raw = prefs.getString(SCHEDULE_KEY, null)
         val today = LocalDate.now()
+        val nowTime = LocalTime.now()
         var synced = false
-        var week = 1
-        val courses = mutableListOf<WidgetCourse>()
+        val todays = mutableListOf<WidgetCourse>()
 
         if (raw != null) {
             runCatching {
@@ -61,7 +58,7 @@ object WidgetRenderer {
                     val start = runCatching {
                         LocalDate.parse(data.optString("semesterStart"))
                     }.getOrNull()
-                    week = if (start != null) {
+                    val week = if (start != null) {
                         (ChronoUnit.DAYS.between(start, today).toInt() / 7) + 1
                     } else {
                         data.optInt("week", 1)
@@ -71,58 +68,65 @@ object WidgetRenderer {
                         val item = array.optJSONObject(index) ?: continue
                         if (item.optInt("day") != today.dayOfWeek.value) continue
                         if (!matchesWeek(item.optJSONArray("weeks"), week)) continue
-                        courses.add(
+                        val endText = item.optString("endTime")
+                        val endTime = runCatching {
+                            LocalTime.parse(endText, timeFormatter)
+                        }.getOrNull()
+                        todays.add(
                             WidgetCourse(
                                 name = item.optString("name"),
                                 room = item.optString("room"),
                                 start = item.optInt("start"),
                                 time = item.optString("time"),
+                                endTime = endTime,
                             ),
                         )
                     }
-                    courses.sortBy { it.start }
+                    todays.sortBy { it.start }
                 }
             }
+        }
+
+        val upcoming = todays.filter { course ->
+            course.endTime == null || nowTime.isBefore(course.endTime)
         }
 
         var header =
             "${today.monthValue}月${today.dayOfMonth}日 " +
                 weekdayLabels[today.dayOfWeek.value - 1]
-        if (synced) {
-            header += " · 第${week}周"
-            if (courses.size > scheduleRowIds.size) {
-                header += " · +${courses.size - scheduleRowIds.size}"
-            }
+        if (synced && upcoming.size > scheduleRowIds.size) {
+            header += " · +${upcoming.size - scheduleRowIds.size}"
         }
         views.setTextViewText(R.id.widget_schedule_date, header)
 
-        if (!synced) {
+        val emptyMessage = when {
+            !synced -> context.getString(R.string.widget_schedule_unsynced)
+            todays.isEmpty() -> context.getString(R.string.widget_schedule_empty)
+            upcoming.isEmpty() -> context.getString(R.string.widget_schedule_ended)
+            else -> null
+        }
+        if (emptyMessage != null) {
             views.setViewVisibility(R.id.widget_schedule_empty, View.VISIBLE)
-            views.setTextViewText(
-                R.id.widget_schedule_empty,
-                context.getString(R.string.widget_schedule_unsynced),
-            )
-        } else if (courses.isEmpty()) {
-            views.setViewVisibility(R.id.widget_schedule_empty, View.VISIBLE)
-            views.setTextViewText(
-                R.id.widget_schedule_empty,
-                context.getString(R.string.widget_schedule_empty),
-            )
+            views.setTextViewText(R.id.widget_schedule_empty, emptyMessage)
         } else {
             views.setViewVisibility(R.id.widget_schedule_empty, View.GONE)
         }
 
         for (index in scheduleRowIds.indices) {
-            val visible = synced && index < courses.size
+            val visible = emptyMessage == null && index < upcoming.size
             views.setViewVisibility(
                 scheduleRowIds[index],
                 if (visible) View.VISIBLE else View.GONE,
             )
             if (visible) {
-                val course = courses[index]
+                val course = upcoming[index]
                 views.setTextViewText(scheduleTimeIds[index], course.time)
                 views.setTextViewText(scheduleNameIds[index], course.name)
                 views.setTextViewText(scheduleRoomIds[index], course.room)
+                views.setViewVisibility(
+                    scheduleRoomIds[index],
+                    if (course.room.isEmpty()) View.GONE else View.VISIBLE,
+                )
             }
         }
 
@@ -134,6 +138,23 @@ object WidgetRenderer {
                 Uri.parse("newclass://schedule"),
             ),
         )
+
+        var nextRefresh: Long? = null
+        val nowMillis = System.currentTimeMillis()
+        for (course in upcoming) {
+            val end = course.endTime ?: continue
+            val endMillis = today.atTime(end)
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+            val current = nextRefresh
+            if (endMillis > nowMillis &&
+                (current == null || endMillis < current)
+            ) {
+                nextRefresh = endMillis
+            }
+        }
+        return nextRefresh?.plus(30_000L)
     }
 
     fun renderElectricity(context: Context, views: RemoteViews) {
@@ -183,5 +204,6 @@ object WidgetRenderer {
         val room: String,
         val start: Int,
         val time: String,
+        val endTime: LocalTime?,
     )
 }

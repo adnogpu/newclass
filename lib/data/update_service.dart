@@ -78,17 +78,18 @@ class UpdateService {
 
   static const proxyBase = 'https://gh-proxy.com/';
   static const repoBase = 'https://github.com/adnogpu/newclass';
-  static const _versionPath = '/releases/latest/download/version.json';
+  static const _versionPath = '/releases/download/latest/version.json';
+  static const _downloadPath = '/releases/download/latest/';
   static const _channel = MethodChannel('newclass/native');
 
   final http.Client _client;
   final Duration timeout;
 
   static String proxyDownloadUrl(String apk) =>
-      '$proxyBase$repoBase/releases/latest/download/$apk';
+      '$proxyBase$repoBase$_downloadPath$apk';
 
   static String directDownloadUrl(String apk) =>
-      '$repoBase/releases/latest/download/$apk';
+      '$repoBase$_downloadPath$apk';
 
   Future<UpdateInfo> fetchLatest() async {
     final urls = [
@@ -97,9 +98,12 @@ class UpdateService {
     ];
     for (final url in urls) {
       try {
+        final uri = Uri.parse(url).replace(
+          queryParameters: {'_t': '${DateTime.now().millisecondsSinceEpoch}'},
+        );
         final response = await _client
             .get(
-              Uri.parse(url),
+              uri,
               headers: {'Accept': 'application/json'},
             )
             .timeout(timeout);

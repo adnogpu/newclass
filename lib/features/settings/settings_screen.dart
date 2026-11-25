@@ -121,7 +121,7 @@ class SettingsScreen extends StatelessWidget {
           Center(
             child: TextButton(
               onPressed: () => _checkUpdate(context),
-              child: const Text('newclass 1.0.2 · 检查更新'),
+              child: const Text('newclass 1.0.3 · 检查更新'),
             ),
           ),
         ],
@@ -216,9 +216,33 @@ class SettingsScreen extends StatelessWidget {
     final pinned = schedule
         ? await widgets.pinSchedule()
         : await widgets.pinElectricity();
-    if (!context.mounted || pinned) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('当前桌面不支持自动添加，请长按桌面添加')),
+    if (!context.mounted) return;
+    if (pinned) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('已发送添加请求；若桌面没有弹窗，请长按桌面添加'),
+        ),
+      );
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('手动添加组件'),
+        content: const Text(
+          '当前桌面不支持应用内添加。\n\n'
+          '1. 长按桌面空白处\n'
+          '2. 选择「添加小部件 / 小工具」\n'
+          '3. 找到 newclass\n'
+          '4. 选择「今日课表」或「寝室电费」',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
     );
   }
 

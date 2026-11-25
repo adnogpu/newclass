@@ -24,11 +24,11 @@ void main() {
     expect(info.sizeMb, closeTo(84, 0.01));
     expect(
       info.downloadUrl,
-      'https://gh-proxy.com/https://github.com/adnogpu/newclass/releases/latest/download/newclass.apk',
+      'https://gh-proxy.com/https://github.com/adnogpu/newclass/releases/download/latest/newclass.apk',
     );
     expect(
       info.directDownloadUrl,
-      'https://github.com/adnogpu/newclass/releases/latest/download/newclass.apk',
+      'https://github.com/adnogpu/newclass/releases/download/latest/newclass.apk',
     );
   });
 

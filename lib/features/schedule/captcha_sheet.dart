@@ -4,19 +4,21 @@ import '../../data/schedule_api.dart';
 
 Future<int?> showCaptchaSheet(
   BuildContext context,
-  CaptchaChallenge challenge,
-) {
+  CaptchaChallenge challenge, {
+  String? notice,
+}) {
   return showModalBottomSheet<int>(
     context: context,
     isScrollControlled: true,
-    builder: (_) => _CaptchaSheet(challenge: challenge),
+    builder: (_) => _CaptchaSheet(challenge: challenge, notice: notice),
   );
 }
 
 class _CaptchaSheet extends StatefulWidget {
-  const _CaptchaSheet({required this.challenge});
+  const _CaptchaSheet({required this.challenge, this.notice});
 
   final CaptchaChallenge challenge;
+  final String? notice;
 
   @override
   State<_CaptchaSheet> createState() => _CaptchaSheetState();
@@ -56,6 +58,15 @@ class _CaptchaSheetState extends State<_CaptchaSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('验证码', style: Theme.of(context).textTheme.titleLarge),
+          if (widget.notice != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              widget.notice!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           Container(
             height: 92,

@@ -6,10 +6,11 @@ class CaptchaOcr {
 
   static const _channel = MethodChannel('newclass/native');
 
+  static bool get isSupported =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   static Future<int?> solve(Uint8List imageBytes) async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
-      return null;
-    }
+    if (!isSupported) return null;
     try {
       final texts = await _channel.invokeListMethod<String>(
         'ocrCaptcha',

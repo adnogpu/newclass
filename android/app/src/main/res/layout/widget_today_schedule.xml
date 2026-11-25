@@ -13,27 +13,13 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <FrameLayout
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:background="@drawable/widget_icon_bg">
-
-            <ImageView
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_widget_calendar" />
-        </FrameLayout>
-
         <TextView
             android:id="@+id/widget_schedule_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
             android:text="@string/widget_schedule_title"
             android:textColor="@color/widget_text"
-            android:textSize="13sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
 
         <TextView
@@ -46,7 +32,7 @@
             android:gravity="end"
             android:maxLines="1"
             android:textColor="@color/widget_muted"
-            android:textSize="9sp" />
+            android:textSize="8sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -64,40 +50,47 @@
             android:background="@drawable/widget_row_bg"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="9dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="9dp"
-            android:paddingBottom="2dp"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
             android:visibility="gone">
 
             <TextView
                 android:id="@+id/widget_schedule_time_1"
-                android:layout_width="44dp"
+                android:layout_width="38dp"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:textColor="@color/widget_accent"
-                android:textSize="9sp"
+                android:textSize="8sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/widget_schedule_name_1"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/widget_text"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_schedule_room_1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:maxLines="1"
-                android:textColor="@color/widget_muted"
-                android:textSize="9sp" />
+                <TextView
+                    android:id="@+id/widget_schedule_name_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/widget_schedule_room_1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_muted"
+                    android:textSize="8sp"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -108,140 +101,57 @@
             android:background="@drawable/widget_row_bg"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="9dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="9dp"
-            android:paddingBottom="2dp"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
             android:visibility="gone">
 
             <TextView
                 android:id="@+id/widget_schedule_time_2"
-                android:layout_width="44dp"
+                android:layout_width="38dp"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:textColor="@color/widget_accent"
-                android:textSize="9sp"
+                android:textSize="8sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/widget_schedule_name_2"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/widget_text"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/widget_schedule_room_2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:maxLines="1"
-                android:textColor="@color/widget_muted"
-                android:textSize="9sp" />
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/widget_schedule_name_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_text"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
 
-        <LinearLayout
-            android:id="@+id/widget_schedule_row_3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:background="@drawable/widget_row_bg"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="9dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="9dp"
-            android:paddingBottom="2dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/widget_schedule_time_3"
-                android:layout_width="44dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textColor="@color/widget_accent"
-                android:textSize="9sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/widget_schedule_name_3"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/widget_text"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/widget_schedule_room_3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:maxLines="1"
-                android:textColor="@color/widget_muted"
-                android:textSize="9sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/widget_schedule_row_4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:background="@drawable/widget_row_bg"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="9dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="9dp"
-            android:paddingBottom="2dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/widget_schedule_time_4"
-                android:layout_width="44dp"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:textColor="@color/widget_accent"
-                android:textSize="9sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/widget_schedule_name_4"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/widget_text"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/widget_schedule_room_4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:maxLines="1"
-                android:textColor="@color/widget_muted"
-                android:textSize="9sp" />
+                <TextView
+                    android:id="@+id/widget_schedule_room_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/widget_muted"
+                    android:textSize="8sp"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextView
             android:id="@+id/widget_schedule_empty"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:drawableTop="@drawable/ic_widget_calendar"
-            android:drawablePadding="6dp"
             android:gravity="center"
             android:text="@string/widget_schedule_unsynced"
             android:textColor="@color/widget_muted"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>
