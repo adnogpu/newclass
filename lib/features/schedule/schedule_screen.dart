@@ -7,10 +7,19 @@ import 'package:provider/provider.dart';
 import '../../core/models/course.dart';
 import '../../core/models/schedule_data.dart';
 import '../../core/storage/settings_store.dart';
+import '../../data/captcha_ocr.dart';
 import '../../data/schedule_api.dart';
 import '../../data/schedule_service.dart';
 import '../../theme/app_theme.dart';
 import 'captcha_sheet.dart';
+
+double scheduleCourseLeft({
+  required int day,
+  required double dayWidth,
+  required int column,
+  required int columns,
+}) =>
+    (day - 1) * dayWidth + column * (dayWidth / columns) + 2;
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -21,7 +30,8 @@ class ScheduleScreen extends StatefulWidget {
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
   static const _axisWidth = 46.0;
-  static const _rowHeight = 88.0;
+  static const _minRowHeight = 82.0;
+  static const _maxRowHeight = 160.0;
   static const _fallbackSlots = [
     ScheduleSlot(label: '1,2节', sections: [1, 2], timeRange: ''),
     ScheduleSlot(label: '3,4节', sections: [3, 4], timeRange: ''),
@@ -110,8 +120,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         return;
       }
       if (data == null) {
-        while (mounted) {
-          final challenge = await _scheduleService.fetchCaptcha();
+        var challenge = await _scheduleService.fetchCaptcha();
+        final ocrAnswer = await CaptchaOcr.solve(challenge.imageBytes);
+        if (ocrAnswer != null) {
+          try {
+            data = await _scheduleService.loginAndSync(
+              challenge: challenge,
+              answer: '$ocrAnswer',
+            );
+          } on CaptchaRejectedException {
+            _snack('自动识别未通过，请手动输入');
+            challenge = await _scheduleService.fetchCaptcha();
+          }
+        }
+        while (mounted && data == null) {
           if (!mounted) return;
           final answer = await showCaptchaSheet(context, challenge);
           if (answer == null) return;
@@ -120,9 +142,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               challenge: challenge,
               answer: '$answer',
             );
-            break;
           } on CaptchaRejectedException {
             _snack('验证码错误，请重试');
+            challenge = await _scheduleService.fetchCaptcha();
           }
         }
       }
@@ -455,7 +477,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final dayWidth = (constraints.maxWidth - _axisWidth) / 7;
-          final totalHeight = _rowHeight * slots.length;
+          final availableHeight =
+              constraints.hasBoundedHeight && constraints.maxHeight > 0
+              ? constraints.maxHeight
+              : _minRowHeight * slots.length;
+          final rowHeight = math.max(
+            _minRowHeight,
+            math.min(_maxRowHeight, availableHeight / slots.length),
+          );
+          final totalHeight = rowHeight * slots.length;
           return SingleChildScrollView(
             child: SizedBox(
               height: totalHeight,
@@ -467,7 +497,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     child: Column(
                       children: [
                         for (final slot in slots)
-                          _TimeAxisCell(slot: slot, height: _rowHeight),
+                          _TimeAxisCell(slot: slot, height: rowHeight),
                       ],
                     ),
                   ),
@@ -497,19 +527,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           ),
                         for (final item in placed)
                           Positioned(
-                            left:
-                                item.day * dayWidth +
-                                item.column * (dayWidth / item.columns) +
-                                2,
-                            top: item.start * _rowHeight + 3,
+                            left: scheduleCourseLeft(
+                              day: item.day,
+                              dayWidth: dayWidth,
+                              column: item.column,
+                              columns: item.columns,
+                            ),
+                            top: item.start * rowHeight + 3,
                             width: dayWidth / item.columns - 4,
                             height:
-                                (item.end - item.start + 1) * _rowHeight - 6,
+                                (item.end - item.start + 1) * rowHeight - 6,
                             child: _CourseCard(
                               course: item.course,
                               color: _courseColor(context, item.course.name),
                               compact:
-                                  (item.end - item.start + 1) * _rowHeight < 58,
+                                  (item.end - item.start + 1) * rowHeight < 58,
                               onTap: () => _showCourse(item.course),
                             ),
                           ),
@@ -785,41 +817,40 @@ class _CourseCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Material(
       color: color,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Flexible(
                 child: Text(
                   course.name,
-                  maxLines: compact ? 2 : 3,
+                  maxLines: compact ? 2 : 4,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11,
-                    height: 1.2,
+                    fontSize: 11.5,
+                    height: 1.22,
                     fontWeight: FontWeight.w600,
                     color: scheme.onSurface,
                   ),
                 ),
               ),
-              if (!compact && course.room.isNotEmpty) ...[
-                const SizedBox(height: 3),
+              const Spacer(),
+              if (!compact && course.room.isNotEmpty)
                 Text(
                   course.room,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 9.5,
                     height: 1.1,
                     color: scheme.onSurface.withValues(alpha: 0.62),
                   ),
                 ),
-              ],
             ],
           ),
         ),

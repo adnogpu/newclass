@@ -10,3 +10,8 @@ Future<void> publishWidgetData({
 Future<Uri?> initialWidgetLaunch() async => null;
 
 Stream<Uri?> widgetClickStream() => const Stream<Uri?>.empty();
+
+Future<bool> requestWidgetPin({
+  required String provider,
+  required String qualifiedProvider,
+}) async => false;

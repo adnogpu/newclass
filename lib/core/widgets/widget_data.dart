@@ -116,6 +116,22 @@ class WidgetPublisher {
     await publishElectricity(balance);
   }
 
+  Future<bool> pinSchedule() => _pin(scheduleProvider);
+
+  Future<bool> pinElectricity() => _pin(electricityProvider);
+
+  Future<bool> _pin(String provider) async {
+    if (!enabled) return false;
+    try {
+      return await requestWidgetPin(
+        provider: provider,
+        qualifiedProvider: '$androidPackage.widget.$provider',
+      );
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _publish(
     String key,
     Map<String, dynamic> data,

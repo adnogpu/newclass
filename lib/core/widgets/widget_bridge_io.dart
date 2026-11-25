@@ -24,3 +24,21 @@ Future<Uri?> initialWidgetLaunch() async {
 
 Stream<Uri?> widgetClickStream() =>
     Platform.isAndroid ? HomeWidget.widgetClicked : const Stream<Uri?>.empty();
+
+Future<bool> requestWidgetPin({
+  required String provider,
+  required String qualifiedProvider,
+}) async {
+  if (!Platform.isAndroid) return false;
+  try {
+    final supported =
+        await HomeWidget.isRequestPinWidgetSupported() ?? false;
+    if (!supported) return false;
+    await HomeWidget.requestPinWidget(
+      qualifiedAndroidName: qualifiedProvider,
+    );
+    return true;
+  } catch (_) {
+    return false;
+  }
+}

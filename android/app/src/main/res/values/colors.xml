@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_background">#F4F8FD</color>
     <color name="widget_text">#17222D</color>
     <color name="widget_muted">#6B7C8E</color>
+    <color name="widget_accent">#2F7FCB</color>
     <color name="widget_divider">#DCE7F3</color>
+    <color name="widget_bg_start">#FDFEFF</color>
+    <color name="widget_bg_end">#E8F2FD</color>
+    <color name="widget_row">#F4F9FF</color>
+    <color name="widget_icon_bg">#D8EBFC</color>
     <color name="ic_launcher_background">#2F7FCB</color>
 </resources>

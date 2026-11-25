@@ -78,10 +78,47 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 22),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              '桌面组件',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Material(
+            color: scheme.surfaceContainerLowest,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(26),
+              side: BorderSide(
+                color: scheme.outlineVariant.withValues(alpha: 0.55),
+              ),
+            ),
+            child: Column(
+              children: [
+                _WidgetActionRow(
+                  icon: Icons.calendar_month_outlined,
+                  label: '今日课表组件',
+                  onTap: () => _pinWidget(context, schedule: true),
+                ),
+                const Divider(indent: 66, endIndent: 18),
+                _WidgetActionRow(
+                  icon: Icons.bolt_outlined,
+                  label: '寝室电费组件',
+                  onTap: () => _pinWidget(context, schedule: false),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 28),
           Center(
             child: Text(
-              'newclass 1.0.0',
+              'newclass 1.0.1',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
               ),
@@ -171,6 +208,20 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _pinWidget(
+    BuildContext context, {
+    required bool schedule,
+  }) async {
+    final widgets = context.read<WidgetPublisher>();
+    final pinned = schedule
+        ? await widgets.pinSchedule()
+        : await widgets.pinElectricity();
+    if (!context.mounted || pinned) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('当前桌面不支持自动添加，请长按桌面添加')),
+    );
+  }
+
   Future<String?> _showTextEditor(
     BuildContext context, {
     required String title,
@@ -251,6 +302,55 @@ class _SettingsRow extends StatelessWidget {
               Icons.chevron_right_rounded,
               size: 20,
               color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WidgetActionRow extends StatelessWidget {
+  const _WidgetActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, size: 20, color: scheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
+            Icon(
+              Icons.add_circle_outline_rounded,
+              size: 22,
+              color: scheme.primary,
             ),
           ],
         ),

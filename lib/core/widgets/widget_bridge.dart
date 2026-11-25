@@ -18,3 +18,11 @@ Future<void> publishWidgetData({
 Future<Uri?> initialWidgetLaunch() => impl.initialWidgetLaunch();
 
 Stream<Uri?> widgetClickStream() => impl.widgetClickStream();
+
+Future<bool> requestWidgetPin({
+  required String provider,
+  required String qualifiedProvider,
+}) => impl.requestWidgetPin(
+  provider: provider,
+  qualifiedProvider: qualifiedProvider,
+);

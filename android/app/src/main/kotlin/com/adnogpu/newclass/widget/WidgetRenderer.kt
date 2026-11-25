@@ -10,15 +10,15 @@ import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import es.antonborri.home_widget.HomeWidgetPlugin
 import org.json.JSONArray
 import org.json.JSONObject
-import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.util.Date
-import java.util.Locale
 
 object WidgetRenderer {
     private const val SCHEDULE_KEY = "today_schedule_json"
     private const val ELECTRICITY_KEY = "electricity_json"
+    private val weekdayLabels = arrayOf(
+        "周一", "周二", "周三", "周四", "周五", "周六", "周日",
+    )
 
     private val scheduleRowIds = intArrayOf(
         R.id.widget_schedule_row_1,
@@ -49,8 +49,8 @@ object WidgetRenderer {
         val prefs = HomeWidgetPlugin.getData(context)
         val raw = prefs.getString(SCHEDULE_KEY, null)
         val today = LocalDate.now()
-        val dateText = SimpleDateFormat("M月d日 EEEE", Locale.CHINA).format(Date())
         var synced = false
+        var week = 1
         val courses = mutableListOf<WidgetCourse>()
 
         if (raw != null) {
@@ -61,7 +61,7 @@ object WidgetRenderer {
                     val start = runCatching {
                         LocalDate.parse(data.optString("semesterStart"))
                     }.getOrNull()
-                    val week = if (start != null) {
+                    week = if (start != null) {
                         (ChronoUnit.DAYS.between(start, today).toInt() / 7) + 1
                     } else {
                         data.optInt("week", 1)
@@ -85,7 +85,17 @@ object WidgetRenderer {
             }
         }
 
-        views.setTextViewText(R.id.widget_schedule_date, dateText)
+        var header =
+            "${today.monthValue}月${today.dayOfMonth}日 " +
+                weekdayLabels[today.dayOfWeek.value - 1]
+        if (synced) {
+            header += " · 第${week}周"
+            if (courses.size > scheduleRowIds.size) {
+                header += " · +${courses.size - scheduleRowIds.size}"
+            }
+        }
+        views.setTextViewText(R.id.widget_schedule_date, header)
+
         if (!synced) {
             views.setViewVisibility(R.id.widget_schedule_empty, View.VISIBLE)
             views.setTextViewText(
@@ -100,12 +110,6 @@ object WidgetRenderer {
             )
         } else {
             views.setViewVisibility(R.id.widget_schedule_empty, View.GONE)
-            if (courses.size > scheduleRowIds.size) {
-                views.setTextViewText(
-                    R.id.widget_schedule_date,
-                    "$dateText · +${courses.size - scheduleRowIds.size}",
-                )
-            }
         }
 
         for (index in scheduleRowIds.indices) {
