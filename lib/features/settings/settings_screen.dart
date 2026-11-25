@@ -123,7 +123,7 @@ class SettingsScreen extends StatelessWidget {
           Center(
             child: TextButton(
               onPressed: () => _checkUpdate(context),
-              child: const Text('newclass 1.0.3 · 检查更新'),
+              child: const Text('newclass 1.0.4 · 检查更新'),
             ),
           ),
         ],

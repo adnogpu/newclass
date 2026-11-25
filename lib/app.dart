@@ -191,38 +191,85 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ValueListenableBuilder<int>(
       valueListenable: widget.tabIndex,
       builder: (context, index, _) {
-        return Scaffold(
-          body: IndexedStack(
-            index: index,
-            children: [
-              _loaded[0] ? const ScheduleScreen() : const SizedBox.shrink(),
-              _loaded[1] ? const ElectricityScreen() : const SizedBox.shrink(),
-              _loaded[2] ? const SettingsScreen() : const SizedBox.shrink(),
-            ],
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [scheme.surface, scheme.surfaceContainerLow],
+            ),
           ),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: index,
-            onDestinationSelected: (value) => widget.tabIndex.value = value,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.calendar_month_outlined),
-                selectedIcon: Icon(Icons.calendar_month_rounded),
-                label: '课表',
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: IndexedStack(
+              index: index,
+              children: [
+                _loaded[0] ? const ScheduleScreen() : const SizedBox.shrink(),
+                _loaded[1]
+                    ? const ElectricityScreen()
+                    : const SizedBox.shrink(),
+                _loaded[2] ? const SettingsScreen() : const SizedBox.shrink(),
+              ],
+            ),
+            bottomNavigationBar: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerLowest.withValues(
+                      alpha: 0.96,
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(
+                      color: scheme.outlineVariant.withValues(alpha: 0.6),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: scheme.shadow.withValues(alpha: 0.07),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: NavigationBarTheme(
+                      data: NavigationBarTheme.of(context).copyWith(
+                        backgroundColor: Colors.transparent,
+                      ),
+                      child: NavigationBar(
+                        height: 64,
+                        selectedIndex: index,
+                        onDestinationSelected: (value) =>
+                            widget.tabIndex.value = value,
+                        destinations: const [
+                          NavigationDestination(
+                            icon: Icon(Icons.calendar_month_outlined),
+                            selectedIcon: Icon(Icons.calendar_month_rounded),
+                            label: '课表',
+                          ),
+                          NavigationDestination(
+                            icon: Icon(Icons.bolt_outlined),
+                            selectedIcon: Icon(Icons.bolt),
+                            label: '电费',
+                          ),
+                          NavigationDestination(
+                            icon: Icon(Icons.settings_outlined),
+                            selectedIcon: Icon(Icons.settings_rounded),
+                            label: '设置',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              NavigationDestination(
-                icon: Icon(Icons.bolt_outlined),
-                selectedIcon: Icon(Icons.bolt),
-                label: '电费',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings_rounded),
-                label: '设置',
-              ),
-            ],
+            ),
           ),
         );
       },

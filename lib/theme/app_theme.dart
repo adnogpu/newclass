@@ -23,6 +23,23 @@ class AppColors {
     Color(0xFF2D2842),
     Color(0xFF1F3736),
   ];
+
+  static const courseAccentsLight = [
+    Color(0xFF5B8FD9),
+    Color(0xFFD47A9E),
+    Color(0xFF6FAE7D),
+    Color(0xFFD39A4A),
+    Color(0xFF8B79CF),
+    Color(0xFF5FAFA9),
+  ];
+  static const courseAccentsDark = [
+    Color(0xFF9BCBF5),
+    Color(0xFFF0A9C6),
+    Color(0xFFA8D5B3),
+    Color(0xFFF0C987),
+    Color(0xFFC0B2F2),
+    Color(0xFF8FD6CF),
+  ];
 }
 
 class AppTheme {
