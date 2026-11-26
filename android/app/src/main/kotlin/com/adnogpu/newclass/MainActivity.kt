@@ -48,7 +48,12 @@ class MainActivity : FlutterActivity() {
                                 @Suppress("DEPRECATION")
                                 info.versionCode
                             }
-                            result.success(mapOf("code" to code))
+                            result.success(
+                                mapOf(
+                                    "code" to code,
+                                    "name" to (info.versionName ?: ""),
+                                ),
+                            )
                         } catch (error: Exception) {
                             result.error("version_failed", error.message, null)
                         }

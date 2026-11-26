@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/app_version.dart';
 import '../../core/models/schedule_data.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/widgets/widget_data.dart';
@@ -11,8 +12,15 @@ import '../update/update_dialog.dart';
 
 const _nativeChannel = MethodChannel('newclass/native');
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late final Future<String> _versionLabel = AppVersion.label();
 
   @override
   Widget build(BuildContext context) {
@@ -121,9 +129,15 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           Center(
-            child: TextButton(
-              onPressed: () => _checkUpdate(context),
-              child: const Text('newclass 1.0.5 · 检查更新'),
+            child: FutureBuilder<String>(
+              future: _versionLabel,
+              builder: (context, snapshot) {
+                final label = snapshot.data ?? 'newclass';
+                return TextButton(
+                  onPressed: () => _checkUpdate(context),
+                  child: Text('$label · 检查更新'),
+                );
+              },
             ),
           ),
         ],
