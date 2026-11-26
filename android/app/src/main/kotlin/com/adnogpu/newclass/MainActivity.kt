@@ -1,16 +1,21 @@
 package com.adnogpu.newclass
 
+import android.app.AlarmManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.util.ArrayDeque
 
 class MainActivity : FlutterActivity() {
+    private val permissionIntents = ArrayDeque<Intent>()
+    private val permissionRequestCode = 2001
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "newclass/native")
@@ -70,9 +75,61 @@ class MainActivity : FlutterActivity() {
                             result.error("settings_failed", error.message, null)
                         }
                     }
+                    "requestStartupPermissions" -> {
+                        requestStartupPermissions()
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun requestStartupPermissions() {
+        permissionIntents.clear()
+        val powerManager = getSystemService(PowerManager::class.java)
+        if (powerManager != null &&
+            !powerManager.isIgnoringBatteryOptimizations(packageName)
+        ) {
+            permissionIntents.add(
+                Intent(
+                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    Uri.parse("package:$packageName"),
+                ),
+            )
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(AlarmManager::class.java)
+            if (alarmManager != null && !alarmManager.canScheduleExactAlarms()) {
+                permissionIntents.add(
+                    Intent(
+                        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                        Uri.parse("package:$packageName"),
+                    ),
+                )
+            }
+        }
+        launchNextPermission()
+    }
+
+    private fun launchNextPermission() {
+        val intent = permissionIntents.pollFirst() ?: return
+        try {
+            startActivityForResult(intent, permissionRequestCode)
+        } catch (_: Exception) {
+            launchNextPermission()
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?,
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == permissionRequestCode) {
+            launchNextPermission()
+        }
     }
 
     private fun installApk(path: String, result: MethodChannel.Result) {

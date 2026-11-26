@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import 'core/background/background_tasks.dart';
+import 'core/startup_permissions.dart';
 import 'core/storage/settings_store.dart';
 import 'core/widgets/widget_bridge.dart';
 import 'core/widgets/widget_data.dart';
@@ -175,6 +176,7 @@ class _MainShellState extends State<MainShell> {
     final initial = widget.tabIndex.value.clamp(0, 3);
     _loaded[initial] = true;
     widget.tabIndex.addListener(_onTabChanged);
+    StartupPermissions.requestOnce();
   }
 
   void _onTabChanged() {
