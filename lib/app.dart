@@ -12,6 +12,7 @@ import 'data/electricity_service.dart';
 import 'data/schedule_service.dart';
 import 'data/update_service.dart';
 import 'features/electricity/electricity_screen.dart';
+import 'features/pickup/pickup_screen.dart';
 import 'features/schedule/schedule_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/setup/setup_screen.dart';
@@ -97,7 +98,7 @@ class _NewClassAppState extends State<NewClassApp> {
     } else if (uri.host == 'schedule') {
       _tabIndex.value = 0;
     } else if (uri.host == 'settings') {
-      _tabIndex.value = 2;
+      _tabIndex.value = 3;
     }
   }
 
@@ -166,12 +167,12 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  final List<bool> _loaded = [true, false, false];
+  final List<bool> _loaded = [true, false, false, false];
 
   @override
   void initState() {
     super.initState();
-    final initial = widget.tabIndex.value.clamp(0, 2);
+    final initial = widget.tabIndex.value.clamp(0, 3);
     _loaded[initial] = true;
     widget.tabIndex.addListener(_onTabChanged);
   }
@@ -212,7 +213,8 @@ class _MainShellState extends State<MainShell> {
                 _loaded[1]
                     ? const ElectricityScreen()
                     : const SizedBox.shrink(),
-                _loaded[2] ? const SettingsScreen() : const SizedBox.shrink(),
+                _loaded[2] ? const PickupScreen() : const SizedBox.shrink(),
+                _loaded[3] ? const SettingsScreen() : const SizedBox.shrink(),
               ],
             ),
             bottomNavigationBar: SafeArea(
@@ -257,6 +259,11 @@ class _MainShellState extends State<MainShell> {
                             icon: Icon(Icons.bolt_outlined),
                             selectedIcon: Icon(Icons.bolt),
                             label: '电费',
+                          ),
+                          NavigationDestination(
+                            icon: Icon(Icons.inventory_2_outlined),
+                            selectedIcon: Icon(Icons.inventory_2_rounded),
+                            label: '外卖柜',
                           ),
                           NavigationDestination(
                             icon: Icon(Icons.settings_outlined),

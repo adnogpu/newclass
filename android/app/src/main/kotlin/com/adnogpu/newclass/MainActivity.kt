@@ -22,6 +22,7 @@ class MainActivity : FlutterActivity() {
                             result.error("bad_args", "missing bytes", null)
                         } else {
                             CaptchaOcrEngine.recognize(
+                                applicationContext,
                                 bytes,
                                 onSuccess = { result.success(it) },
                                 onError = { error ->

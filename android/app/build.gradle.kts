@@ -70,7 +70,7 @@ kotlin {
 
 dependencies {
     implementation("androidx.core:core:1.15.0")
-    implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 }
 
 flutter {

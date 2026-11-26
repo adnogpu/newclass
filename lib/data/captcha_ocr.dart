@@ -37,7 +37,8 @@ class CaptchaOcr {
         .replaceAll('−', '-')
         .replaceAll('—', '-')
         .replaceAll('–', '-')
-        .replaceAll('＋', '+');
+        .replaceAll('＋', '+')
+        .replaceAll('十', '+');
     final match = RegExp(r'(\d+)\s*([+\-*/])\s*(\d+)').firstMatch(text);
     if (match == null) return null;
     final a = int.tryParse(match.group(1)!);

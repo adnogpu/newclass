@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,6 +32,16 @@ jobs:
           flutter-version: "3.50.1"
           channel: stable
           cache: true
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
 
       - name: Install dependencies
         run: flutter pub get
@@ -67,9 +77,16 @@ jobs:
 
       - name: Build release APK
         run: |
-          flutter build apk --release \
-            --build-name="${{ steps.version.outputs.name }}" \
-            --build-number="${{ github.run_number }}"
+          for attempt in 1 2 3; do
+            echo "build attempt $attempt"
+            if flutter build apk --release \
+              --build-name="${{ steps.version.outputs.name }}" \
+              --build-number="${{ github.run_number }}"; then
+              exit 0
+            fi
+            sleep $((attempt * 20))
+          done
+          exit 1
 
       - name: Prepare release assets
         run: |

@@ -61,7 +61,13 @@ void main() {
 
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('电费'), findsWidgets);
+    expect(find.text('外卖柜'), findsOneWidget);
     expect(find.text('设置'), findsWidgets);
     expect(store.isConfigured, isTrue);
+
+    await tester.tap(find.text('外卖柜'));
+    await tester.pumpAndSettle();
+    expect(find.text('外卖柜查询'), findsOneWidget);
+    expect(find.text('订单号'), findsOneWidget);
   });
 }

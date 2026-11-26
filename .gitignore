@@ -50,6 +50,8 @@ app.*.map.json
 # Local reference material: contains account credentials and personal data
 /query_by_room.py
 /query_class/
+/aiks_pickup/
+/aiks_recon/
 
 # Local tooling artifacts
 /.playwright-mcp/

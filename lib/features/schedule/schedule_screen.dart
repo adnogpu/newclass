@@ -124,23 +124,31 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         _snack(error.message);
         return;
       }
-      if (data == null) {
-        var challenge = await _scheduleService.fetchCaptcha();
-        final ocrAnswer = await CaptchaOcr.solve(challenge.imageBytes);
-        String? notice;
-        if (ocrAnswer != null) {
+      if (data == null && CaptchaOcr.isSupported) {
+        // The bundled OCR model handles this CAPTCHA reliably. If a challenge
+        // is unreadable or rejected, fetch a fresh one instead of asking the
+        // user to solve arithmetic in the middle of a login.
+        for (var attempt = 0; attempt < 6 && data == null; attempt++) {
+          if (!mounted) return;
+          final challenge = await _scheduleService.fetchCaptcha();
+          final answer = await CaptchaOcr.solve(challenge.imageBytes);
+          if (answer == null) continue;
           try {
             data = await _scheduleService.loginAndSync(
               challenge: challenge,
-              answer: '$ocrAnswer',
+              answer: '$answer',
             );
           } on CaptchaRejectedException {
-            notice = '自动识别未通过，请手动输入';
-            challenge = await _scheduleService.fetchCaptcha();
+            continue;
           }
-        } else if (CaptchaOcr.isSupported) {
-          notice = '自动识别未成功，请手动输入';
         }
+        if (data == null) {
+          _snack('验证码自动识别失败，请重试');
+          return;
+        }
+      } else if (data == null) {
+        var challenge = await _scheduleService.fetchCaptcha();
+        String? notice;
         while (mounted && data == null) {
           if (!mounted) return;
           final answer = await showCaptchaSheet(
