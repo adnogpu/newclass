@@ -55,6 +55,7 @@ class _PickupScreenState extends State<PickupScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _result = null;
     });
     try {
       final result = await _api.query(order);
@@ -372,11 +373,26 @@ class _PickupResultCard extends StatelessWidget {
               value: cabinet.box.isEmpty ? '—' : cabinet.box,
             ),
             if (cabinet.scene.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _DetailRow(
-                icon: Icons.place_outlined,
-                label: '位置',
-                value: cabinet.scene,
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.place_outlined,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      cabinet.scene,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],

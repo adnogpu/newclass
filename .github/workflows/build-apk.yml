@@ -159,6 +159,27 @@ jobs:
             sleep $((attempt * 10))
           done
           if [ "$uploaded" -ne 1 ]; then
+            # GitHub's asset API occasionally returns persistent 5xx for an
+            # existing asset. Recreating the rolling release is the reliable
+            # recovery path used when clobbering keeps failing.
+            echo "asset upload failed repeatedly; recreating rolling release"
+            gh release delete latest \
+              --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+            for attempt in 1 2 3 4 5; do
+              if gh release create latest \
+                build/release/newclass.apk build/release/version.json \
+                --repo "$GITHUB_REPOSITORY" \
+                --title "newclass latest" \
+                --notes "$NOTES" \
+                --latest; then
+                uploaded=1
+                break
+              fi
+              echo "release recreate failed (attempt $attempt), retrying..."
+              sleep $((attempt * 10))
+            done
+          fi
+          if [ "$uploaded" -ne 1 ]; then
             echo "could not upload release assets"
             exit 1
           fi
