@@ -141,12 +141,25 @@ object WidgetRenderer {
 
         var nextRefresh: Long? = null
         val nowMillis = System.currentTimeMillis()
+        val zone = ZoneId.systemDefault()
+
+        // Refresh at midnight even when the last course of the day ended hours
+        // ago. Relying only on ACTION_DATE_CHANGED can leave yesterday's
+        // timetable on screen after the clock rolls over.
+        val nextMidnight = today.plusDays(1)
+            .atStartOfDay(zone)
+            .toInstant()
+            .toEpochMilli() + 1_000L
+        if (nextMidnight > nowMillis) {
+            nextRefresh = nextMidnight
+        }
+
         for (course in upcoming) {
             val end = course.endTime ?: continue
             val endMillis = today.atTime(end)
-                .atZone(ZoneId.systemDefault())
+                .atZone(zone)
                 .toInstant()
-                .toEpochMilli()
+                .toEpochMilli() + 1_000L
             val current = nextRefresh
             if (endMillis > nowMillis &&
                 (current == null || endMillis < current)
@@ -154,7 +167,7 @@ object WidgetRenderer {
                 nextRefresh = endMillis
             }
         }
-        return nextRefresh?.plus(30_000L)
+        return nextRefresh
     }
 
     fun renderElectricity(context: Context, views: RemoteViews) {

@@ -104,8 +104,6 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    override fun onDestroy() {
-        CaptchaOcrEngine.close()
-        super.onDestroy()
-    }
+    // The OCR session is process-scoped. Closing it from onDestroy can race an
+    // in-flight inference when the activity is recreated; let the process own it.
 }

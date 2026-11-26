@@ -1,8 +1,10 @@
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/pickup_api.dart';
+import '../../data/pickup_history.dart';
 
 class PickupScreen extends StatefulWidget {
   const PickupScreen({super.key});
@@ -16,6 +18,8 @@ class _PickupScreenState extends State<PickupScreen> {
 
   final TextEditingController _controller = TextEditingController();
   final PickupApi _api = PickupApi();
+  final PickupHistoryStore _historyStore = PickupHistoryStore();
+  List<PickupHistoryEntry> _history = const [];
   PickupResult? _result;
   String? _error;
   bool _loading = false;
@@ -23,17 +27,21 @@ class _PickupScreenState extends State<PickupScreen> {
   @override
   void initState() {
     super.initState();
-    _restoreOrder();
+    _restoreLocalState();
   }
 
-  Future<void> _restoreOrder() async {
+  Future<void> _restoreLocalState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(_orderKey) ?? '';
-      if (!mounted || saved.isEmpty) return;
-      if (_controller.text.isEmpty) {
-        setState(() => _controller.text = saved);
-      }
+      final history = await _historyStore.load();
+      if (!mounted) return;
+      setState(() {
+        _history = history;
+        if (_controller.text.isEmpty && saved.isNotEmpty) {
+          _controller.text = saved;
+        }
+      });
     } catch (_) {}
   }
 
@@ -64,6 +72,8 @@ class _PickupScreenState extends State<PickupScreen> {
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_orderKey, order);
+        final history = await _historyStore.add(result);
+        if (mounted) setState(() => _history = history);
       } catch (_) {}
     } on PickupException catch (error) {
       if (mounted) setState(() => _error = error.message);
@@ -72,6 +82,26 @@ class _PickupScreenState extends State<PickupScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _queryHistory(PickupHistoryEntry entry) async {
+    if (_loading) return;
+    _controller.text = entry.orderSn;
+    setState(() {});
+    await _query();
+  }
+
+  Future<void> _clearHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_orderKey);
+      await _historyStore.clear();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _history = const []);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('历史记录已清空')),
+    );
   }
 
   @override
@@ -162,14 +192,217 @@ class _PickupScreenState extends State<PickupScreen> {
           if (_result != null) ...[
             const SizedBox(height: 14),
             _PickupResultCard(result: _result!),
-          ] else if (_error == null) ...[
+          ] else if (_error == null && _history.isEmpty) ...[
             const SizedBox(height: 56),
             _EmptyState(color: scheme),
+          ],
+          if (_history.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            _HistorySection(
+              entries: _history,
+              onTap: _queryHistory,
+              onClear: _clearHistory,
+            ),
           ],
         ],
       ),
     );
   }
+}
+
+class _HistorySection extends StatelessWidget {
+  const _HistorySection({
+    required this.entries,
+    required this.onTap,
+    required this.onClear,
+  });
+
+  final List<PickupHistoryEntry> entries;
+  final ValueChanged<PickupHistoryEntry> onTap;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Row(
+            children: [
+              Text(
+                '历史订单',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: onClear,
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                ),
+                child: const Text('清空'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Material(
+          color: scheme.surfaceContainerLowest,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(26),
+            side: BorderSide(
+              color: scheme.outlineVariant.withValues(alpha: 0.55),
+            ),
+          ),
+          child: Column(
+            children: [
+              for (var index = 0; index < entries.length; index++) ...[
+                _HistoryTile(
+                  entry: entries[index],
+                  onTap: () => onTap(entries[index]),
+                ),
+                if (index != entries.length - 1)
+                  const Divider(indent: 66, endIndent: 18),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HistoryTile extends StatelessWidget {
+  const _HistoryTile({required this.entry, required this.onTap});
+
+  final PickupHistoryEntry entry;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final subtitle = [
+      '订单尾号 ${entry.orderTail}',
+      if (!entry.isElsewhere && entry.box.isNotEmpty) '柜门 ${entry.box}',
+    ].join(' · ');
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 13, 14, 13),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: scheme.primaryContainer.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.receipt_long_outlined,
+                size: 19,
+                color: scheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    entry.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _statusChipFor(
+                  scheme,
+                  entry.saved,
+                  other: entry.isElsewhere,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _historyTimeLabel(entry.queriedAt),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _historyTimeLabel(DateTime time) {
+  final now = DateTime.now();
+  if (time.year == now.year &&
+      time.month == now.month &&
+      time.day == now.day) {
+    return DateFormat('HH:mm').format(time);
+  }
+  if (time.year == now.year) {
+    return DateFormat('MM-dd').format(time);
+  }
+  return DateFormat('yy-MM-dd').format(time);
+}
+
+_StatusChip _statusChipFor(
+  ColorScheme scheme,
+  int? saved, {
+  bool other = false,
+}) {
+  if (other) {
+    return _StatusChip(
+      label: '其他柜机',
+      background: scheme.tertiaryContainer,
+      foreground: scheme.onTertiaryContainer,
+    );
+  }
+  if (saved == 1) {
+    return _StatusChip(
+      label: '已取走',
+      background: scheme.surfaceContainerHigh,
+      foreground: scheme.onSurfaceVariant,
+    );
+  }
+  if (saved == 0) {
+    return _StatusChip(
+      label: '在柜中',
+      background: scheme.primaryContainer,
+      foreground: scheme.onPrimaryContainer,
+    );
+  }
+  return _StatusChip(
+    label: '状态未知',
+    background: scheme.surfaceContainerHigh,
+    foreground: scheme.onSurfaceVariant,
+  );
 }
 
 class _EmptyState extends StatelessWidget {
@@ -401,27 +634,8 @@ class _PickupResultCard extends StatelessWidget {
     );
   }
 
-  Widget _statusChip(ColorScheme scheme) {
-    if (result.pickedUp) {
-      return _StatusChip(
-        label: '已取走',
-        background: scheme.surfaceContainerHigh,
-        foreground: scheme.onSurfaceVariant,
-      );
-    }
-    if (result.inCabinet) {
-      return _StatusChip(
-        label: '在柜中',
-        background: scheme.primaryContainer,
-        foreground: scheme.onPrimaryContainer,
-      );
-    }
-    return _StatusChip(
-      label: '状态未知',
-      background: scheme.surfaceContainerHigh,
-      foreground: scheme.onSurfaceVariant,
-    );
-  }
+  Widget _statusChip(ColorScheme scheme) =>
+      _statusChipFor(scheme, result.saved);
 }
 
 class _StatusChip extends StatelessWidget {

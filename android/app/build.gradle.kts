@@ -58,6 +58,10 @@ android {
                 // Local builds without key.properties fall back to debug signing.
                 signingConfigs.getByName("debug")
             }
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

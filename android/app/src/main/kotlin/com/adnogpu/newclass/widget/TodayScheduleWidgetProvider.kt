@@ -7,6 +7,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.widget.RemoteViews
 import com.adnogpu.newclass.R
 
@@ -26,6 +27,9 @@ class TodayScheduleWidgetProvider : AppWidgetProvider() {
             Intent.ACTION_DATE_CHANGED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_USER_PRESENT,
+            Intent.ACTION_SCREEN_ON,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
             -> updateAll(context)
         }
     }
@@ -76,9 +80,49 @@ class TodayScheduleWidgetProvider : AppWidgetProvider() {
                 return
             }
             try {
-                alarmManager.set(AlarmManager.RTC, atMillis, pendingIntent)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    !alarmManager.canScheduleExactAlarms()
+                ) {
+                    // Exact alarms need a special-access grant on Android 12+.
+                    // Inexact idle alarms still refresh near the target time.
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        atMillis,
+                        pendingIntent,
+                    )
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        atMillis,
+                        pendingIntent,
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    alarmManager.setExact(
+                        AlarmManager.RTC_WAKEUP,
+                        atMillis,
+                        pendingIntent,
+                    )
+                }
             } catch (_: SecurityException) {
-                // Fall back to the 30-minute widget update period.
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            atMillis,
+                            pendingIntent,
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        alarmManager.set(
+                            AlarmManager.RTC_WAKEUP,
+                            atMillis,
+                            pendingIntent,
+                        )
+                    }
+                } catch (_: SecurityException) {
+                    // Fall back to the 30-minute widget update period.
+                }
             }
         }
     }
