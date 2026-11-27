@@ -19,8 +19,8 @@ def main() -> int:
         return 1
     text = changelog.read_text(encoding="utf-8")
     pattern = re.compile(
-        rf"^##\s+\[?{re.escape(version)}\]?(?:\s+-\s+.*)?\s*$"
-        rf"(?P<body>.*?)(?=^##\s+|\Z)",
+        rf"^##[ \t]+\[?{re.escape(version)}\]?(?:[ \t]+-[ \t]+.*)?[ \t]*$"
+        rf"(?P<body>.*?)(?=^##[ \t]|\Z)",
         re.MULTILINE | re.DOTALL,
     )
     match = pattern.search(text)

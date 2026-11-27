@@ -1,6 +1,7 @@
 import '../core/models/schedule_data.dart';
 import '../core/storage/settings_store.dart';
 import '../core/widgets/widget_data.dart';
+import 'captcha_ocr.dart';
 import 'schedule_api.dart';
 
 class ScheduleService {
@@ -15,6 +16,7 @@ class ScheduleService {
   final ScheduleApi Function() _apiFactory;
 
   ScheduleApi? _api;
+  bool _dailySyncInProgress = false;
 
   Future<void> begin() async {
     await end();
@@ -39,6 +41,75 @@ class ScheduleService {
     } on LoginException {
       return null;
     }
+  }
+
+  /// Refreshes the timetable at most once every 24 hours without any UI.
+  /// Saved cookies are reused first; if the session has expired, the bundled
+  /// OCR solver can log in again without interrupting the user.
+  Future<bool> maybeDailySilentSync({DateTime? now}) async {
+    if (!store.isConfigured || _dailySyncInProgress) return false;
+    final current = now ?? DateTime.now();
+    if (!SettingsStore.scheduleAutoSyncDue(
+      now: current,
+      fetchedAt: store.schedule?.fetchedAt,
+      lastAttempt: store.scheduleAutoSyncAttempt,
+    )) {
+      return false;
+    }
+    _dailySyncInProgress = true;
+    ScheduleApi? api;
+    try {
+      await store.markScheduleAutoSyncAttempt(current);
+      api = _apiFactory();
+      final raw = await store.readScheduleCookies();
+      if (raw != null && raw.isNotEmpty) {
+        api.importCookiesJson(raw);
+      }
+      ScheduleData? data;
+      if (api.hasCookies) {
+        try {
+          data = await api.fetchSchedule();
+        } on ScheduleSessionExpiredException {
+          data = null;
+        }
+      }
+      data ??= await _silentLoginAndFetch(api);
+      if (data == null) return false;
+      await store.saveScheduleCookies(api.exportCookiesJson());
+      await _save(data);
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      api?.close();
+      _dailySyncInProgress = false;
+    }
+  }
+
+  Future<ScheduleData?> _silentLoginAndFetch(ScheduleApi api) async {
+    if (!CaptchaOcr.isSupported) return null;
+    if (store.account.isEmpty || store.password.isEmpty) return null;
+    for (var attempt = 0; attempt < 4; attempt++) {
+      try {
+        final challenge = await api.fetchCaptcha();
+        final answer = await CaptchaOcr.solve(challenge.imageBytes);
+        if (answer == null) continue;
+        await api.login(
+          username: store.account,
+          password: store.password,
+          captchaUid: challenge.uid,
+          answer: '$answer',
+        );
+        return await api.fetchSchedule();
+      } on CaptchaRejectedException {
+        continue;
+      } on ScheduleException {
+        return null;
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   Future<CaptchaChallenge> fetchCaptcha() => _requireApi().fetchCaptcha();

@@ -114,11 +114,13 @@ void main() {
     );
     await store.saveSchedule(_schedule());
     await store.saveScheduleCookies('{"cas.nustti.edu.cn":{"CASTGC":"x"}}');
+    await store.markScheduleAutoSyncAttempt(DateTime(2026, 11, 27, 12));
 
     await store.updateAccount('otheruser');
     expect(store.account, 'otheruser');
     expect(store.schedule, isNull);
     expect(prefs.getString(SettingsStore.scheduleKey), isNull);
+    expect(prefs.getString(SettingsStore.scheduleAutoSyncAttemptKey), isNull);
     expect(credentials.cookies, isNull);
     expect(store.roomNo, '2620');
   });
@@ -174,5 +176,41 @@ void main() {
     expect(SettingsStore.isValidRoomNo('12'), isFalse);
     expect(SettingsStore.isValidRoomNo('1234567'), isFalse);
     expect(SettingsStore.isValidRoomNo('26a0'), isFalse);
+  });
+
+  test('silent schedule sync runs at most once per day', () {
+    final now = DateTime(2026, 11, 27, 12);
+    expect(
+      SettingsStore.scheduleAutoSyncDue(
+        now: now,
+        fetchedAt: now.subtract(const Duration(hours: 23)),
+        lastAttempt: null,
+      ),
+      isFalse,
+    );
+    expect(
+      SettingsStore.scheduleAutoSyncDue(
+        now: now,
+        fetchedAt: now.subtract(const Duration(hours: 24)),
+        lastAttempt: null,
+      ),
+      isTrue,
+    );
+    expect(
+      SettingsStore.scheduleAutoSyncDue(
+        now: now,
+        fetchedAt: null,
+        lastAttempt: now.subtract(const Duration(hours: 23)),
+      ),
+      isFalse,
+    );
+    expect(
+      SettingsStore.scheduleAutoSyncDue(
+        now: now,
+        fetchedAt: null,
+        lastAttempt: now.subtract(const Duration(hours: 24)),
+      ),
+      isTrue,
+    );
   });
 }

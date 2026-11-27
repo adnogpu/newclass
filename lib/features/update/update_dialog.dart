@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/update/apk_installer.dart';
@@ -62,6 +63,10 @@ class _UpdateDialogState extends State<_UpdateDialog> {
     final sizeLabel = info.size > 0
         ? ' · ${info.sizeMb.toStringAsFixed(1)} MB'
         : '';
+    final publishedAt = info.publishedAt?.toLocal();
+    final publishedLabel = publishedAt == null
+        ? ''
+        : DateFormat('yyyy-MM-dd HH:mm').format(publishedAt);
     return AlertDialog(
       title: Text('发现新版本 ${info.versionName}'),
       content: SingleChildScrollView(
@@ -71,16 +76,20 @@ class _UpdateDialogState extends State<_UpdateDialog> {
           children: [
             Text(
               '构建 ${info.versionCode}$sizeLabel',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant),
             ),
+            if (publishedLabel.isNotEmpty)
+              Text(
+                '发布时间 $publishedLabel',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: scheme.onSurfaceVariant),
+              ),
             const SizedBox(height: 16),
             Text(
               '更新内容',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             ..._noteWidgets(context, info.notes),
@@ -92,9 +101,8 @@ class _UpdateDialogState extends State<_UpdateDialog> {
                 _progress == null
                     ? '正在下载…'
                     : '下载中 ${(_progress! * 100).toStringAsFixed(0)}%',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: scheme.onSurfaceVariant),
               ),
             ],
             if (_error != null) ...[
@@ -132,23 +140,31 @@ List<Widget> _noteWidgets(BuildContext context, String notes) {
     return [
       Text(
         '本次更新包含界面优化和问题修复。',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: scheme.onSurfaceVariant,
-        ),
+        style: Theme.of(context).textTheme.bodyMedium
+            ?.copyWith(color: scheme.onSurfaceVariant),
       ),
     ];
   }
   final widgets = <Widget>[];
   for (final line in lines) {
+    if (line.startsWith('## ') && !line.startsWith('### ')) {
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 10));
+      widgets.add(
+        Text(
+          line.replaceFirst(RegExp(r'^#+\s*'), ''),
+          style: Theme.of(context).textTheme.titleSmall
+              ?.copyWith(color: scheme.primary, fontWeight: FontWeight.w800),
+        ),
+      );
+      continue;
+    }
     if (line.startsWith('###')) {
       if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 8));
       widgets.add(
         Text(
           line.replaceFirst(RegExp(r'^#+\s*'), ''),
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: scheme.primary,
-            fontWeight: FontWeight.w700,
-          ),
+          style: Theme.of(context).textTheme.labelLarge
+              ?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
         ),
       );
       continue;
@@ -173,9 +189,8 @@ List<Widget> _noteWidgets(BuildContext context, String notes) {
             Expanded(
               child: Text(
                 text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  height: 1.35,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(height: 1.35),
               ),
             ),
           ],

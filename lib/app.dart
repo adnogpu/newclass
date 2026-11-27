@@ -40,7 +40,7 @@ class NewClassApp extends StatefulWidget {
   State<NewClassApp> createState() => _NewClassAppState();
 }
 
-class _NewClassAppState extends State<NewClassApp> {
+class _NewClassAppState extends State<NewClassApp> with WidgetsBindingObserver {
   final ValueNotifier<int> _tabIndex = ValueNotifier<int>(0);
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   StreamSubscription<Uri?>? _widgetClickSubscription;
@@ -48,6 +48,7 @@ class _NewClassAppState extends State<NewClassApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.enablePlatformServices) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _initPlatform());
     }
@@ -58,9 +59,7 @@ class _NewClassAppState extends State<NewClassApp> {
     try {
       final initial = await initialWidgetLaunch();
       _applyWidgetUri(initial);
-      _widgetClickSubscription = widgetClickStream().listen(
-        _applyWidgetUri,
-      );
+      _widgetClickSubscription = widgetClickStream().listen(_applyWidgetUri);
     } catch (_) {}
     try {
       await initBackgroundRefresh();
@@ -73,7 +72,27 @@ class _NewClassAppState extends State<NewClassApp> {
       );
     } catch (_) {}
     if (widget.store.isConfigured) {
+      _refreshScheduleSilently();
       await _checkForUpdate();
+    }
+  }
+
+  void _refreshScheduleSilently() {
+    if (!widget.enablePlatformServices ||
+        kIsWeb ||
+        defaultTargetPlatform != TargetPlatform.android ||
+        !widget.store.isConfigured) {
+      return;
+    }
+    unawaited(
+      widget.scheduleService.maybeDailySilentSync().catchError((_) => false),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshScheduleSilently();
     }
   }
 
@@ -105,6 +124,7 @@ class _NewClassAppState extends State<NewClassApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _widgetClickSubscription?.cancel();
     _tabIndex.dispose();
     super.dispose();
@@ -232,9 +252,7 @@ class _MainShellState extends State<MainShell> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerLowest.withValues(
-                      alpha: 0.9,
-                    ),
+                    color: scheme.surfaceContainerLowest.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.72),
@@ -250,9 +268,8 @@ class _MainShellState extends State<MainShell> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(30),
                     child: NavigationBarTheme(
-                      data: NavigationBarTheme.of(context).copyWith(
-                        backgroundColor: Colors.transparent,
-                      ),
+                      data: NavigationBarTheme.of(context)
+                          .copyWith(backgroundColor: Colors.transparent),
                       child: NavigationBar(
                         height: 66,
                         selectedIndex: index,

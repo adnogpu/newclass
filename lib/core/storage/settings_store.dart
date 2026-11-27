@@ -70,6 +70,8 @@ class SettingsStore extends ChangeNotifier {
   static const scheduleKey = 'cache.schedule';
   static const semesterStartKey = 'settings.semester_start';
   static const semesterStartForKey = 'settings.semester_start_for';
+  static const scheduleAutoSyncAttemptKey = 'cache.schedule_auto_sync_attempt';
+  static const scheduleAutoSyncInterval = Duration(hours: 24);
 
   final SharedPreferences _prefs;
   final CredentialStore _credentials;
@@ -83,9 +85,7 @@ class SettingsStore extends ChangeNotifier {
   DateTime? semesterStart;
 
   bool get isConfigured =>
-      account.trim().isNotEmpty &&
-      password.isNotEmpty &&
-      isValidRoomNo(roomNo);
+      account.trim().isNotEmpty && password.isNotEmpty && isValidRoomNo(roomNo);
 
   bool get hasValidRoom => isValidRoomNo(roomNo);
 
@@ -168,6 +168,7 @@ class SettingsStore extends ChangeNotifier {
     await _credentials.savePassword(value);
     password = value;
     await _credentials.clearScheduleCookies();
+    await _prefs.remove(scheduleAutoSyncAttemptKey);
     notifyListeners();
   }
 
@@ -217,12 +218,31 @@ class SettingsStore extends ChangeNotifier {
 
   Future<void> setSemesterStart(DateTime date) async {
     semesterStart = SemesterCalendar.mondayOf(date);
-    await _prefs.setString(
-      semesterStartKey,
-      semesterStart!.toIso8601String(),
-    );
+    await _prefs.setString(semesterStartKey, semesterStart!.toIso8601String());
     await _prefs.setString(semesterStartForKey, schedule?.semester ?? '');
     notifyListeners();
+  }
+
+  DateTime? get scheduleAutoSyncAttempt =>
+      DateTime.tryParse(_prefs.getString(scheduleAutoSyncAttemptKey) ?? '');
+
+  Future<void> markScheduleAutoSyncAttempt(DateTime value) =>
+      _prefs.setString(scheduleAutoSyncAttemptKey, value.toIso8601String());
+
+  static bool scheduleAutoSyncDue({
+    required DateTime now,
+    required DateTime? fetchedAt,
+    required DateTime? lastAttempt,
+  }) {
+    if (fetchedAt != null &&
+        now.difference(fetchedAt) < scheduleAutoSyncInterval) {
+      return false;
+    }
+    if (lastAttempt != null &&
+        now.difference(lastAttempt) < scheduleAutoSyncInterval) {
+      return false;
+    }
+    return true;
   }
 
   Future<String?> readScheduleCookies() => _credentials.readScheduleCookies();
@@ -240,6 +260,7 @@ class SettingsStore extends ChangeNotifier {
   Future<void> _clearScheduleCache() async {
     schedule = null;
     await _prefs.remove(scheduleKey);
+    await _prefs.remove(scheduleAutoSyncAttemptKey);
   }
 
   static bool isValidRoomNo(String value) =>
@@ -274,9 +295,7 @@ class SettingsStore extends ChangeNotifier {
     try {
       final json = jsonDecode(raw);
       if (json is Map) {
-        return ElectricityBalance.fromJson(
-          Map<String, dynamic>.from(json),
-        );
+        return ElectricityBalance.fromJson(Map<String, dynamic>.from(json));
       }
     } catch (_) {}
     return null;
