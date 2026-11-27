@@ -54,6 +54,8 @@ void main() {
     expect(first['name'], '示例课程');
     expect(first['day'], 3);
     expect(first['time'], '1,2节');
+    expect(first['section'], '1,2节');
+    expect(first['startTime'], '08:00');
     expect(first['endTime'], '09:40');
     expect(first['weeks'], [12]);
   });

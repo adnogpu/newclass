@@ -31,15 +31,24 @@ class ScheduleWidgetData {
               'day': course.day,
               'start': course.startSection,
               'end': course.endSection,
+              'section': course.timeLabel,
               'time': course.timeLabel.isNotEmpty
                   ? course.timeLabel
                   : course.timeRange,
+              'startTime': _startTime(course.timeRange),
               'endTime': _endTime(course.timeRange),
               'weeks': course.weeks,
             },
           )
           .toList(),
     };
+  }
+
+  static String _startTime(String timeRange) {
+    final parts = timeRange.split('-');
+    if (parts.length != 2) return '';
+    final start = parts[0].trim();
+    return RegExp(r'^\d{1,2}:\d{2}$').hasMatch(start) ? start : '';
   }
 
   static String _endTime(String timeRange) {

@@ -23,22 +23,50 @@ object WidgetRenderer {
         "周一", "周二", "周三", "周四", "周五", "周六", "周日",
     )
     private val timeFormatter = DateTimeFormatter.ofPattern("H:mm")
+    private val displayTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    private val accentColors = intArrayOf(
+        0xFF5B8FD9.toInt(),
+        0xFFD47A9E.toInt(),
+        0xFF6FAE7D.toInt(),
+        0xFFD39A4A.toInt(),
+        0xFF8B79CF.toInt(),
+        0xFF5FAFA9.toInt(),
+    )
 
     private val scheduleRowIds = intArrayOf(
         R.id.widget_schedule_row_1,
         R.id.widget_schedule_row_2,
+        R.id.widget_schedule_row_3,
     )
-    private val scheduleTimeIds = intArrayOf(
-        R.id.widget_schedule_time_1,
-        R.id.widget_schedule_time_2,
+    private val scheduleAccentIds = intArrayOf(
+        R.id.widget_schedule_accent_1,
+        R.id.widget_schedule_accent_2,
+        R.id.widget_schedule_accent_3,
+    )
+    private val scheduleSectionIds = intArrayOf(
+        R.id.widget_schedule_section_1,
+        R.id.widget_schedule_section_2,
+        R.id.widget_schedule_section_3,
+    )
+    private val scheduleStartIds = intArrayOf(
+        R.id.widget_schedule_start_1,
+        R.id.widget_schedule_start_2,
+        R.id.widget_schedule_start_3,
+    )
+    private val scheduleEndIds = intArrayOf(
+        R.id.widget_schedule_end_1,
+        R.id.widget_schedule_end_2,
+        R.id.widget_schedule_end_3,
     )
     private val scheduleNameIds = intArrayOf(
         R.id.widget_schedule_name_1,
         R.id.widget_schedule_name_2,
+        R.id.widget_schedule_name_3,
     )
     private val scheduleRoomIds = intArrayOf(
         R.id.widget_schedule_room_1,
         R.id.widget_schedule_room_2,
+        R.id.widget_schedule_room_3,
     )
 
     /** Renders the schedule widget and returns the next epoch millis to refresh. */
@@ -68,17 +96,18 @@ object WidgetRenderer {
                         val item = array.optJSONObject(index) ?: continue
                         if (item.optInt("day") != today.dayOfWeek.value) continue
                         if (!matchesWeek(item.optJSONArray("weeks"), week)) continue
-                        val endText = item.optString("endTime")
-                        val endTime = runCatching {
-                            LocalTime.parse(endText, timeFormatter)
-                        }.getOrNull()
+                        val section = item.optString("section")
+                            .ifBlank { item.optString("time") }
                         todays.add(
                             WidgetCourse(
                                 name = item.optString("name"),
                                 room = item.optString("room"),
                                 start = item.optInt("start"),
-                                time = item.optString("time"),
-                                endTime = endTime,
+                                section = section,
+                                startTime = parseTime(
+                                    item.optString("startTime"),
+                                ),
+                                endTime = parseTime(item.optString("endTime")),
                             ),
                         )
                     }
@@ -94,8 +123,11 @@ object WidgetRenderer {
         var header =
             "${today.monthValue}月${today.dayOfMonth}日 " +
                 weekdayLabels[today.dayOfWeek.value - 1]
-        if (synced && upcoming.size > scheduleRowIds.size) {
-            header += " · +${upcoming.size - scheduleRowIds.size}"
+        if (synced && upcoming.isNotEmpty()) {
+            header += " · ${upcoming.size}节"
+            if (upcoming.size > scheduleRowIds.size) {
+                header += " +${upcoming.size - scheduleRowIds.size}"
+            }
         }
         views.setTextViewText(R.id.widget_schedule_date, header)
 
@@ -120,7 +152,28 @@ object WidgetRenderer {
             )
             if (visible) {
                 val course = upcoming[index]
-                views.setTextViewText(scheduleTimeIds[index], course.time)
+                views.setInt(
+                    scheduleAccentIds[index],
+                    "setBackgroundColor",
+                    accentColors[index % accentColors.size],
+                )
+                views.setTextViewText(scheduleSectionIds[index], course.section)
+                val startText = course.startTime
+                    ?.format(displayTimeFormatter)
+                    .orEmpty()
+                val endText = course.endTime
+                    ?.format(displayTimeFormatter)
+                    .orEmpty()
+                views.setTextViewText(scheduleStartIds[index], startText)
+                views.setTextViewText(scheduleEndIds[index], endText)
+                views.setViewVisibility(
+                    scheduleStartIds[index],
+                    if (startText.isEmpty()) View.GONE else View.VISIBLE,
+                )
+                views.setViewVisibility(
+                    scheduleEndIds[index],
+                    if (endText.isEmpty()) View.GONE else View.VISIBLE,
+                )
                 views.setTextViewText(scheduleNameIds[index], course.name)
                 views.setTextViewText(scheduleRoomIds[index], course.room)
                 views.setViewVisibility(
@@ -204,6 +257,10 @@ object WidgetRenderer {
         )
     }
 
+    private fun parseTime(text: String): LocalTime? = runCatching {
+        LocalTime.parse(text, timeFormatter)
+    }.getOrNull()
+
     private fun matchesWeek(weeks: JSONArray?, week: Int): Boolean {
         if (weeks == null || weeks.length() == 0) return true
         for (index in 0 until weeks.length()) {
@@ -216,7 +273,8 @@ object WidgetRenderer {
         val name: String,
         val room: String,
         val start: Int,
-        val time: String,
+        val section: String,
+        val startTime: LocalTime?,
         val endTime: LocalTime?,
     )
 }
