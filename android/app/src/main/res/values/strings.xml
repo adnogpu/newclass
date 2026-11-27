@@ -7,9 +7,12 @@
     <string name="widget_schedule_ended">今日课程已结束</string>
     <string name="widget_schedule_description">显示今天的课程</string>
     <string name="widget_electricity_title">寝室电费</string>
+    <string name="widget_electricity_subtitle">实时用电</string>
     <string name="widget_electricity_unit">度</string>
     <string name="widget_electricity_none">打开 newclass 查询</string>
     <string name="widget_electricity_updated">%1$s 更新</string>
+    <string name="widget_electricity_refresh">刷新电费</string>
     <string name="widget_electricity_description">显示寝室剩余电量</string>
+    <string name="widget_schedule_refresh">刷新课表</string>
     <string name="widget_value_placeholder">—</string>
 </resources>

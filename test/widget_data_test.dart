@@ -92,6 +92,9 @@ void main() {
     expect(data['state'], 'ok');
     expect(data['degree'], '77.52');
     expect(data['room'], '2号学生公寓 · 6楼 · 2620室');
+    expect(data['build'], '2号学生公寓');
+    expect(data['floor'], '6楼');
+    expect(data['roomName'], '2620室');
     expect(data['updated'], '14:32');
   });
 

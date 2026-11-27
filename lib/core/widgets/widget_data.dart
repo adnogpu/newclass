@@ -73,6 +73,9 @@ class ElectricityWidgetData {
         'state': 'none',
         'degree': '—',
         'room': '',
+        'build': '',
+        'floor': '',
+        'roomName': '',
         'updated': '',
       };
     }
@@ -83,6 +86,9 @@ class ElectricityWidgetData {
       'state': 'ok',
       'degree': balance.displayDegree,
       'room': balance.room?.displayName ?? '',
+      'build': balance.room?.buildName ?? '',
+      'floor': balance.room?.floorName ?? '',
+      'roomName': balance.room?.roomName ?? '',
       'updated': '$hour:$minute',
     };
   }

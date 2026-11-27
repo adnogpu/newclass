@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/update/apk_installer.dart';
@@ -73,10 +75,15 @@ class _UpdateDialogState extends State<_UpdateDialog> {
                 color: scheme.onSurfaceVariant,
               ),
             ),
-            if (info.notes.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(info.notes),
-            ],
+            const SizedBox(height: 16),
+            Text(
+              '更新内容',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ..._noteWidgets(context, info.notes),
             if (_downloading) ...[
               const SizedBox(height: 18),
               LinearProgressIndicator(value: _progress),
@@ -112,4 +119,69 @@ class _UpdateDialogState extends State<_UpdateDialog> {
       ],
     );
   }
+}
+
+List<Widget> _noteWidgets(BuildContext context, String notes) {
+  final scheme = Theme.of(context).colorScheme;
+  final lines = const LineSplitter()
+      .convert(notes)
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty)
+      .toList();
+  if (lines.isEmpty) {
+    return [
+      Text(
+        '本次更新包含界面优化和问题修复。',
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    ];
+  }
+  final widgets = <Widget>[];
+  for (final line in lines) {
+    if (line.startsWith('###')) {
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 8));
+      widgets.add(
+        Text(
+          line.replaceFirst(RegExp(r'^#+\s*'), ''),
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: scheme.primary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+      continue;
+    }
+    final text = line.replaceFirst(RegExp(r'^[-*]\s*'), '');
+    widgets.add(
+      Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 4,
+              height: 4,
+              margin: const EdgeInsets.only(top: 7),
+              decoration: BoxDecoration(
+                color: scheme.primary.withValues(alpha: 0.7),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  return widgets;
 }

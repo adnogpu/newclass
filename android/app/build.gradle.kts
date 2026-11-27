@@ -74,6 +74,7 @@ kotlin {
 
 dependencies {
     implementation("androidx.core:core:1.15.0")
+    implementation("androidx.work:work-runtime:2.11.2")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 }
 

@@ -1,12 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_text">#17222D</color>
-    <color name="widget_muted">#6B7C8E</color>
+    <color name="widget_text">#18324D</color>
+    <color name="widget_muted">#607B96</color>
     <color name="widget_accent">#2F7FCB</color>
-    <color name="widget_divider">#DCE7F3</color>
-    <color name="widget_bg_start">#FDFEFF</color>
-    <color name="widget_bg_end">#E8F2FD</color>
-    <color name="widget_row">#F4F9FF</color>
+    <color name="widget_accent_deep">#0F62C8</color>
+    <color name="widget_divider">#B9D7EF</color>
+    <color name="widget_bg_start">#E8F7FF</color>
+    <color name="widget_bg_end">#D8ECFD</color>
+    <color name="widget_glass_start">#F3FBFFFF</color>
+    <color name="widget_glass_end">#CBE7FCFF</color>
+    <color name="widget_glass_stroke">#CCFFFFFF</color>
+    <color name="widget_row">#D9FFFFFF</color>
     <color name="widget_icon_bg">#D8EBFC</color>
+    <color name="widget_course_blue">#4F8FDE</color>
+    <color name="widget_course_pink">#D2779B</color>
+    <color name="widget_course_green">#67A879</color>
+    <color name="widget_course_amber">#CD9447</color>
+    <color name="widget_course_purple">#8777CE</color>
+    <color name="widget_course_blue_bg">#E7F2FF</color>
+    <color name="widget_course_pink_bg">#FBEAF2</color>
+    <color name="widget_course_green_bg">#E9F6EC</color>
+    <color name="widget_course_amber_bg">#FFF3DE</color>
+    <color name="widget_course_purple_bg">#EFEBFF</color>
     <color name="ic_launcher_background">#2F7FCB</color>
 </resources>

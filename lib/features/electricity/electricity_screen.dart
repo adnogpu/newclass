@@ -3,9 +3,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/room_ref.dart';
+import '../../core/ui/app_ui.dart';
 import '../../core/storage/settings_store.dart';
 import '../../data/electricity_api.dart';
 import '../../data/electricity_service.dart';
+import 'widgets/electricity_summary_card.dart';
 
 class ElectricityScreen extends StatefulWidget {
   const ElectricityScreen({super.key});
@@ -155,12 +157,12 @@ class _ElectricityScreenState extends State<ElectricityScreen>
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+          padding: const EdgeInsets.fromLTRB(18, 8, 18, 110),
           children: [
-            Row(
-              children: [
-                Text('电费', style: Theme.of(context).textTheme.headlineSmall),
-                const Spacer(),
+            PageHeader(
+              title: '电费',
+              subtitle: '寝室剩余电量',
+              actions: [
                 if (_loading)
                   const SizedBox(
                     width: 44,
@@ -181,79 +183,12 @@ class _ElectricityScreenState extends State<ElectricityScreen>
                   ),
               ],
             ),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 26),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: scheme.outlineVariant.withValues(alpha: 0.55),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: scheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Icon(
-                          Icons.meeting_room_outlined,
-                          size: 20,
-                          color: scheme.onPrimaryContainer,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          roomLabel,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        balance?.displayDegree ?? '—',
-                        style: TextStyle(
-                          fontSize: 62,
-                          height: 0.95,
-                          letterSpacing: -2.5,
-                          fontWeight: FontWeight.w800,
-                          color: scheme.onSurface,
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8, bottom: 7),
-                        child: Text(
-                          '度',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    updatedLabel,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 16),
+            ElectricitySummaryCard(
+              balance: balance,
+              room: balance?.room ?? _store.resolvedRoom,
+              roomLabel: roomLabel,
+              updatedLabel: updatedLabel,
             ),
             if (_error != null) ...[
               const SizedBox(height: 14),

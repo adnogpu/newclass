@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/storage/settings_store.dart';
+import '../../core/ui/app_ui.dart';
 import '../../core/widgets/widget_data.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -125,15 +126,8 @@ class _SetupScreenState extends State<SetupScreen> {
                       ],
                     ),
                     const SizedBox(height: 36),
-                    Container(
+                    GlassCard(
                       padding: const EdgeInsets.all(22),
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(
-                          color: scheme.outlineVariant.withValues(alpha: 0.6),
-                        ),
-                      ),
                       child: Column(
                         children: [
                           TextField(
@@ -186,15 +180,13 @@ class _SetupScreenState extends State<SetupScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: _valid && !_saving ? _submit : null,
-                      child: _saving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('开始使用'),
+                    SizedBox(
+                      width: double.infinity,
+                      child: PrimaryButton(
+                        label: '开始使用',
+                        loading: _saving,
+                        onPressed: _valid ? _submit : null,
+                      ),
                     ),
                   ],
                 ),

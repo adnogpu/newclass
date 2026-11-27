@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/app_version.dart';
 import '../../core/models/schedule_data.dart';
+import '../../core/ui/app_ui.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/widgets/widget_data.dart';
 import '../../data/update_service.dart';
@@ -31,19 +32,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return SafeArea(
       bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 110),
         children: [
-          Text('设置', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 18),
-          Material(
-            color: scheme.surfaceContainerLowest,
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26),
-              side: BorderSide(
-                color: scheme.outlineVariant.withValues(alpha: 0.55),
-              ),
-            ),
+          PageHeader(title: '设置', subtitle: '账号、桌面组件与更新'),
+          const SizedBox(height: 16),
+          GlassCard(
+            padding: EdgeInsets.zero,
             child: Column(
               children: [
                 _SettingsRow(
@@ -91,26 +85,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
           const SizedBox(height: 22),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              '桌面组件',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          const SectionLabel(text: '桌面组件'),
           const SizedBox(height: 8),
-          Material(
-            color: scheme.surfaceContainerLowest,
-            clipBehavior: Clip.antiAlias,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26),
-              side: BorderSide(
-                color: scheme.outlineVariant.withValues(alpha: 0.55),
-              ),
-            ),
+          GlassCard(
+            padding: EdgeInsets.zero,
             child: Column(
               children: [
                 _WidgetActionRow(

@@ -7,6 +7,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.widget.RemoteViews
 import com.adnogpu.newclass.R
@@ -41,6 +42,13 @@ class TodayScheduleWidgetProvider : AppWidgetProvider() {
 
         fun update(context: Context, manager: AppWidgetManager, id: Int): Long? {
             val views = RemoteViews(context.packageName, R.layout.widget_today_schedule)
+            val adapterIntent = Intent(context, ScheduleWidgetService::class.java)
+                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+                .apply {
+                    data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
+                }
+            views.setRemoteAdapter(android.R.id.list, adapterIntent)
+            views.setEmptyView(android.R.id.list, R.id.widget_schedule_empty)
             val nextRefresh = WidgetRenderer.renderSchedule(context, views)
             manager.updateAppWidget(id, views)
             return nextRefresh
@@ -58,6 +66,9 @@ class TodayScheduleWidgetProvider : AppWidgetProvider() {
                 if (next != null && (current == null || next < current)) {
                     nextRefresh = next
                 }
+            }
+            if (ids.isNotEmpty()) {
+                manager.notifyAppWidgetViewDataChanged(ids, android.R.id.list)
             }
             scheduleRefresh(context, nextRefresh)
         }

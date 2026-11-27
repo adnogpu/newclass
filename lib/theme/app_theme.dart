@@ -3,17 +3,17 @@ import 'package:material_ui/material_ui.dart';
 class AppColors {
   const AppColors._();
 
-  static const seed = Color(0xFF499AE0);
-  static const lightSurface = Color(0xFFF4F8FD);
-  static const darkSurface = Color(0xFF0F1419);
+  static const seed = Color(0xFF3988CE);
+  static const lightSurface = Color(0xFFF2F6FC);
+  static const darkSurface = Color(0xFF0E1722);
 
   static const coursePaletteLight = [
-    Color(0xFFDCEBFA),
-    Color(0xFFF9E3EC),
-    Color(0xFFE4F3E1),
-    Color(0xFFFFF0D2),
-    Color(0xFFEAE5FB),
-    Color(0xFFDFF3F1),
+    Color(0xFFE4F1FF),
+    Color(0xFFFBEAF2),
+    Color(0xFFE9F7EE),
+    Color(0xFFFFF3DE),
+    Color(0xFFEFEBFF),
+    Color(0xFFE4F5F4),
   ];
   static const coursePaletteDark = [
     Color(0xFF1D3246),
@@ -51,9 +51,9 @@ class AppTheme {
       brightness: Brightness.light,
     );
     final scheme = base.copyWith(
-      primary: const Color(0xFF2F7FCB),
+      primary: const Color(0xFF3988CE),
       onPrimary: Colors.white,
-      primaryContainer: const Color(0xFFD8EBFC),
+      primaryContainer: const Color(0xFFDDEEFF),
       onPrimaryContainer: const Color(0xFF0B3554),
       secondary: const Color(0xFF6CA6E8),
       secondaryContainer: const Color(0xFFE3F0FC),
@@ -61,14 +61,14 @@ class AppTheme {
       tertiary: const Color(0xFF8E97F0),
       tertiaryContainer: const Color(0xFFE9E9FC),
       surface: AppColors.lightSurface,
-      onSurface: const Color(0xFF17222D),
+      onSurface: const Color(0xFF192431),
       surfaceContainerLowest: Colors.white,
-      surfaceContainerLow: const Color(0xFFF0F6FD),
-      surfaceContainer: const Color(0xFFEAF2FC),
-      surfaceContainerHigh: const Color(0xFFE3EEFA),
-      surfaceContainerHighest: const Color(0xFFDCE9F8),
+      surfaceContainerLow: const Color(0xFFF7FAFE),
+      surfaceContainer: const Color(0xFFEEF4FB),
+      surfaceContainerHigh: const Color(0xFFE7F0FA),
+      surfaceContainerHighest: const Color(0xFFDFEAF6),
       outline: const Color(0xFF7B8FA3),
-      outlineVariant: const Color(0xFFDCE7F3),
+      outlineVariant: const Color(0xFFE7EDF5),
       error: const Color(0xFFBA4A4A),
       errorContainer: const Color(0xFFFCE8E8),
       onErrorContainer: const Color(0xFF5B1B1B),
@@ -93,13 +93,13 @@ class AppTheme {
       tertiaryContainer: const Color(0xFF2D2A4A),
       surface: AppColors.darkSurface,
       onSurface: const Color(0xFFE8EEF5),
-      surfaceContainerLowest: const Color(0xFF151C23),
-      surfaceContainerLow: const Color(0xFF1A232B),
-      surfaceContainer: const Color(0xFF1F2933),
-      surfaceContainerHigh: const Color(0xFF24303B),
-      surfaceContainerHighest: const Color(0xFF2A3744),
+      surfaceContainerLowest: const Color(0xFF151F2A),
+      surfaceContainerLow: const Color(0xFF1A2633),
+      surfaceContainer: const Color(0xFF1F2D3B),
+      surfaceContainerHigh: const Color(0xFF243442),
+      surfaceContainerHighest: const Color(0xFF2A3B4A),
       outline: const Color(0xFF8AA0B4),
-      outlineVariant: const Color(0xFF31404D),
+      outlineVariant: const Color(0xFF314454),
       error: const Color(0xFFFFB4AB),
       errorContainer: const Color(0xFF54201D),
       onErrorContainer: const Color(0xFFFFDAD6),
@@ -154,8 +154,8 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 68,
         elevation: 0,
-        backgroundColor: scheme.surfaceContainerLow.withValues(alpha: 0.94),
-        indicatorColor: scheme.primaryContainer,
+        backgroundColor: scheme.surfaceContainerLowest.withValues(alpha: 0.92),
+        indicatorColor: scheme.primaryContainer.withValues(alpha: 0.85),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => textTheme.labelMedium?.copyWith(
@@ -218,9 +218,9 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 54),
+          minimumSize: const Size(0, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: textTheme.labelLarge,
         ),

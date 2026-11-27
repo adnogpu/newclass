@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/ui/app_ui.dart';
 import '../../data/pickup_api.dart';
 import '../../data/pickup_history.dart';
 
@@ -111,15 +112,12 @@ class _PickupScreenState extends State<PickupScreen> {
       bottom: false,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
+        padding: const EdgeInsets.fromLTRB(18, 8, 18, 116),
         children: [
-          Row(
-            children: [
-              Text(
-                '外卖柜查询',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const Spacer(),
+          PageHeader(
+            title: '外卖柜查询',
+            subtitle: '订单号查取件信息',
+            actions: [
               if (_loading)
                 const SizedBox(
                   width: 44,
@@ -140,16 +138,9 @@ class _PickupScreenState extends State<PickupScreen> {
                 ),
             ],
           ),
-          const SizedBox(height: 18),
-          Container(
+          const SizedBox(height: 16),
+          GlassCard(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.55),
-              ),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -177,10 +168,11 @@ class _PickupScreenState extends State<PickupScreen> {
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _loading ? null : _query,
-                  icon: const Icon(Icons.local_shipping_outlined, size: 20),
-                  label: const Text('查询'),
+                PrimaryButton(
+                  label: '查询',
+                  icon: Icons.local_shipping_outlined,
+                  loading: _loading,
+                  onPressed: _query,
                 ),
               ],
             ),
@@ -252,28 +244,18 @@ class _HistorySection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Material(
-          color: scheme.surfaceContainerLowest,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(26),
-            side: BorderSide(
-              color: scheme.outlineVariant.withValues(alpha: 0.55),
+        for (var index = 0; index < entries.length; index++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GlassCard(
+              padding: EdgeInsets.zero,
+              radius: 20,
+              child: _HistoryTile(
+                entry: entries[index],
+                onTap: () => onTap(entries[index]),
+              ),
             ),
           ),
-          child: Column(
-            children: [
-              for (var index = 0; index < entries.length; index++) ...[
-                _HistoryTile(
-                  entry: entries[index],
-                  onTap: () => onTap(entries[index]),
-                ),
-                if (index != entries.length - 1)
-                  const Divider(indent: 66, endIndent: 18),
-              ],
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -412,29 +394,9 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 68,
-          height: 68,
-          decoration: BoxDecoration(
-            color: color.primaryContainer.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Icon(
-            Icons.inventory_2_outlined,
-            size: 30,
-            color: color.onPrimaryContainer,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          '输入订单号查询取餐信息',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: color.onSurfaceVariant,
-          ),
-        ),
-      ],
+    return const EmptyState(
+      icon: Icons.inventory_2_outlined,
+      message: '输入订单号查询取餐信息',
     );
   }
 }

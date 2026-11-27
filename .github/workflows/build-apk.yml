@@ -52,6 +52,10 @@ jobs:
           VERSION_NAME=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml | head -1)
           echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
 
+      - name: Extract release notes
+        run: |
+          python3 tool/release_notes.py "${{ steps.version.outputs.name }}" build/release/release-notes.txt
+
       - name: Analyze
         run: flutter analyze
 
@@ -89,22 +93,38 @@ jobs:
           exit 1
 
       - name: Prepare release assets
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+          BUILD_NUMBER: ${{ github.run_number }}
         run: |
           mkdir -p build/release
           cp build/app/outputs/flutter-apk/app-release.apk build/release/newclass.apk
           SHA256=$(sha256sum build/release/newclass.apk | awk '{print $1}')
           SIZE=$(stat -c%s build/release/newclass.apk)
-          cat > build/release/version.json <<EOF
-          {
-            "versionName": "${{ steps.version.outputs.name }}",
-            "versionCode": ${{ github.run_number }},
-            "apk": "newclass.apk",
-            "sha256": "$SHA256",
-            "size": $SIZE,
-            "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "notes": "Automated build of commit ${{ github.sha }}"
+          export SHA256 SIZE
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+
+          notes = open(
+              "build/release/release-notes.txt", encoding="utf-8"
+          ).read().strip()
+          data = {
+              "versionName": os.environ["VERSION_NAME"],
+              "versionCode": int(os.environ["BUILD_NUMBER"]),
+              "apk": "newclass.apk",
+              "sha256": os.environ["SHA256"],
+              "size": int(os.environ["SIZE"]),
+              "publishedAt": datetime.now(timezone.utc).strftime(
+                  "%Y-%m-%dT%H:%M:%SZ"
+              ),
+              "notes": notes,
           }
-          EOF
+          with open("build/release/version.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, ensure_ascii=False, indent=2)
+              f.write(chr(10))
+          PY
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -120,7 +140,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          NOTES="Automated build of newclass ${{ steps.version.outputs.name }} (build ${{ github.run_number }}). Commit: ${{ github.sha }}"
+          NOTES=$(cat build/release/release-notes.txt)
 
           if ! gh release view latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             created=0

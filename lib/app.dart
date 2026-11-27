@@ -201,9 +201,16 @@ class _MainShellState extends State<MainShell> {
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [scheme.surface, scheme.surfaceContainerLow],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                scheme.surface,
+                Color.alphaBlend(
+                  scheme.primary.withValues(alpha: 0.08),
+                  scheme.surface,
+                ),
+                scheme.surface,
+              ],
             ),
           ),
           child: Scaffold(
@@ -226,28 +233,28 @@ class _MainShellState extends State<MainShell> {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: scheme.surfaceContainerLowest.withValues(
-                      alpha: 0.96,
+                      alpha: 0.9,
                     ),
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(30),
                     border: Border.all(
-                      color: scheme.outlineVariant.withValues(alpha: 0.6),
+                      color: Colors.white.withValues(alpha: 0.72),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: scheme.shadow.withValues(alpha: 0.07),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: scheme.primary.withValues(alpha: 0.10),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
                       ),
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(30),
                     child: NavigationBarTheme(
                       data: NavigationBarTheme.of(context).copyWith(
                         backgroundColor: Colors.transparent,
                       ),
                       child: NavigationBar(
-                        height: 64,
+                        height: 66,
                         selectedIndex: index,
                         onDestinationSelected: (value) =>
                             widget.tabIndex.value = value,

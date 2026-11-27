@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../core/models/course.dart';
 import '../../core/models/schedule_data.dart';
 import '../../core/storage/settings_store.dart';
+import '../../core/ui/app_ui.dart';
 import '../../data/captcha_ocr.dart';
 import '../../data/schedule_api.dart';
 import '../../data/schedule_service.dart';
@@ -29,10 +30,10 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  static const _axisWidth = 46.0;
+  static const _axisWidth = 44.0;
   static const _minRowHeight = 82.0;
   static const _maxRowHeight = 160.0;
-  static const _minDayWidth = 60.0;
+  static const _minDayWidth = 78.0;
   static const _headerHeight = 56.0;
   static const _fallbackSlots = [
     ScheduleSlot(label: '1,2节', sections: [1, 2], timeRange: ''),
@@ -48,6 +49,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   int _week = 1;
   bool _syncing = false;
   bool _showToday = false;
+  bool _autoScrolledWeek = false;
   DateTime? _lastStart;
   DateTime? _lastFetchedAt;
 
@@ -197,7 +199,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   void _shiftWeek(int delta) {
     final max = _store.maxWeek;
     final next = (_week + delta).clamp(1, max);
-    if (next != _week) setState(() => _week = next);
+    if (next != _week) {
+      setState(() {
+        _week = next;
+        _autoScrolledWeek = false;
+      });
+    }
   }
 
   Future<void> _pickWeek() async {
@@ -256,7 +263,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       },
     );
     if (selected != null && mounted) {
-      setState(() => _week = selected);
+      setState(() {
+        _week = selected;
+        _autoScrolledWeek = false;
+      });
     }
   }
 
@@ -399,16 +409,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
-            child: Row(
-              children: [
-                Text(
-                  _showToday ? '今日' : '课表',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const Spacer(),
+            child: PageHeader(
+              title: _showToday ? '今日' : '课表',
+              subtitle: _showToday
+                  ? '$dateLabel · 第$currentWeek周 · ${todayCourses.length}门'
+                  : '$range · 第$currentWeek周',
+              actions: [
                 TextButton.icon(
                   onPressed: () =>
                       setState(() => _showToday = !_showToday),
@@ -448,59 +454,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
           if (_showToday) ...[
-            const SizedBox(height: 18),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          dateLabel,
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '第$currentWeek周',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (hasSchedule)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${todayCourses.length} 门',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Expanded(child: _buildToday(context, now, todayCourses)),
           ] else ...[
             const SizedBox(height: 6),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerLowest.withValues(alpha: 0.65),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: scheme.outlineVariant.withValues(alpha: 0.55),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   _WeekArrow(
                     icon: Icons.chevron_left_rounded,
                     onTap: () => _shiftWeek(-1),
@@ -546,7 +517,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     icon: Icons.chevron_right_rounded,
                     onTap: () => _shiftWeek(1),
                   ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -567,38 +539,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     DateTime now,
     List<Course> courses,
   ) {
-    final scheme = Theme.of(context).colorScheme;
     if (!_store.hasSchedule) {
-      return Center(
-        child: FilledButton.tonal(
+      return EmptyState(
+        icon: Icons.calendar_month_outlined,
+        message: '尚未同步课表',
+        action: FilledButton.tonal(
           onPressed: _sync,
           child: const Text('同步课表'),
         ),
       );
     }
     if (courses.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.wb_sunny_outlined,
-              size: 38,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '今天没有课程',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+      return const EmptyState(
+        icon: Icons.wb_sunny_outlined,
+        message: '今天没有课程',
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(18, 6, 18, 24),
+      padding: const EdgeInsets.fromLTRB(18, 6, 18, 110),
       itemCount: courses.length,
       itemBuilder: (context, index) {
         final course = courses[index];
@@ -636,7 +594,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: scheme.outlineVariant.withValues(alpha: 0.45),
         ),
@@ -665,6 +623,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           );
           final totalHeight = rowHeight * slots.length;
           final dayAreaWidth = dayWidth * 7;
+          _centerTodayColumn(availableWidth, dayWidth, todayIndex);
 
           return SingleChildScrollView(
             child: Row(
@@ -804,6 +763,59 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         },
       ),
     );
+  }
+
+  void _centerTodayColumn(
+    double availableWidth,
+    double dayWidth,
+    int todayIndex,
+  ) {
+    if (_autoScrolledWeek || todayIndex < 0) return;
+    final currentWeek = _store.hasSchedule
+        ? _store.currentWeek(DateTime.now())
+        : 1;
+    if (_week != currentWeek) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyTodayScroll(availableWidth, dayWidth, todayIndex);
+    });
+  }
+
+  void _applyTodayScroll(
+    double availableWidth,
+    double dayWidth,
+    int todayIndex, [
+    int attempt = 0,
+  ]) {
+    if (!mounted || _autoScrolledWeek) return;
+    if (!_dayScrollController.hasClients) {
+      if (attempt < 6) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _applyTodayScroll(
+            availableWidth,
+            dayWidth,
+            todayIndex,
+            attempt + 1,
+          );
+        });
+      }
+      return;
+    }
+    final max = _dayScrollController.position.maxScrollExtent;
+    if (max <= 0 && attempt < 6) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applyTodayScroll(
+          availableWidth,
+          dayWidth,
+          todayIndex,
+          attempt + 1,
+        );
+      });
+      return;
+    }
+    _autoScrolledWeek = true;
+    final viewport = availableWidth - _axisWidth;
+    final target = todayIndex * dayWidth - (viewport - dayWidth) / 2;
+    _dayScrollController.jumpTo(target.clamp(0.0, max));
   }
 
   List<_PlacedCourse> _layoutDay(
@@ -1054,9 +1066,12 @@ class _CourseCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Material(
       color: background,
+      elevation: 0.4,
+      shadowColor: accent.withValues(alpha: 0.14),
+      surfaceTintColor: Colors.transparent,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: accent.withValues(alpha: 0.24),
           width: 0.8,
@@ -1091,8 +1106,8 @@ class _CourseCard extends StatelessWidget {
                           maxLines: compact ? 3 : 6,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 12,
-                            height: 1.18,
+                            fontSize: 11.5,
+                            height: 1.2,
                             fontWeight: FontWeight.w600,
                             color: scheme.onSurface,
                           ),
@@ -1154,10 +1169,13 @@ class _TodayCourseTile extends StatelessWidget {
     return Opacity(
       opacity: ended ? 0.6 : 1,
       child: Material(
-        color: scheme.surfaceContainerLowest,
+        color: scheme.surfaceContainerLowest.withValues(alpha: 0.96),
+        elevation: 0.5,
+        shadowColor: scheme.primary.withValues(alpha: 0.10),
+        surfaceTintColor: Colors.transparent,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           side: BorderSide(
             color: scheme.outlineVariant.withValues(alpha: 0.55),
           ),
@@ -1165,7 +1183,7 @@ class _TodayCourseTile extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
+            padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

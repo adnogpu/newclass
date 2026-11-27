@@ -1,6 +1,8 @@
 package com.adnogpu.newclass.widget
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
@@ -16,6 +18,22 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
+data class WidgetCourse(
+    val name: String,
+    val room: String,
+    val start: Int,
+    val section: String,
+    val startTime: LocalTime?,
+    val endTime: LocalTime?,
+)
+
+data class ScheduleSnapshot(
+    val synced: Boolean,
+    val todays: List<WidgetCourse>,
+    val upcoming: List<WidgetCourse>,
+    val nextRefresh: Long?,
+)
+
 object WidgetRenderer {
     private const val SCHEDULE_KEY = "today_schedule_json"
     private const val ELECTRICITY_KEY = "electricity_json"
@@ -24,53 +42,35 @@ object WidgetRenderer {
     )
     private val timeFormatter = DateTimeFormatter.ofPattern("H:mm")
     private val displayTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    private val accentColors = intArrayOf(
-        0xFF5B8FD9.toInt(),
-        0xFFD47A9E.toInt(),
-        0xFF6FAE7D.toInt(),
-        0xFFD39A4A.toInt(),
-        0xFF8B79CF.toInt(),
-        0xFF5FAFA9.toInt(),
+
+    val courseAccents = intArrayOf(
+        0xFF4F8FDE.toInt(),
+        0xFFD2779B.toInt(),
+        0xFF67A879.toInt(),
+        0xFFCD9447.toInt(),
+        0xFF8777CE.toInt(),
+    )
+    private val courseIconBgs = intArrayOf(
+        R.drawable.widget_course_icon_blue,
+        R.drawable.widget_course_icon_pink,
+        R.drawable.widget_course_icon_green,
+        R.drawable.widget_course_icon_amber,
+    )
+    private val courseIcons = intArrayOf(
+        R.drawable.ic_widget_code,
+        R.drawable.ic_widget_book,
+        R.drawable.ic_widget_science,
+        R.drawable.ic_widget_calc,
     )
 
-    private val scheduleRowIds = intArrayOf(
-        R.id.widget_schedule_row_1,
-        R.id.widget_schedule_row_2,
-        R.id.widget_schedule_row_3,
-    )
-    private val scheduleAccentIds = intArrayOf(
-        R.id.widget_schedule_accent_1,
-        R.id.widget_schedule_accent_2,
-        R.id.widget_schedule_accent_3,
-    )
-    private val scheduleSectionIds = intArrayOf(
-        R.id.widget_schedule_section_1,
-        R.id.widget_schedule_section_2,
-        R.id.widget_schedule_section_3,
-    )
-    private val scheduleStartIds = intArrayOf(
-        R.id.widget_schedule_start_1,
-        R.id.widget_schedule_start_2,
-        R.id.widget_schedule_start_3,
-    )
-    private val scheduleEndIds = intArrayOf(
-        R.id.widget_schedule_end_1,
-        R.id.widget_schedule_end_2,
-        R.id.widget_schedule_end_3,
-    )
-    private val scheduleNameIds = intArrayOf(
-        R.id.widget_schedule_name_1,
-        R.id.widget_schedule_name_2,
-        R.id.widget_schedule_name_3,
-    )
-    private val scheduleRoomIds = intArrayOf(
-        R.id.widget_schedule_room_1,
-        R.id.widget_schedule_room_2,
-        R.id.widget_schedule_room_3,
-    )
+    fun courseIcon(index: Int): Int = courseIcons[index % courseIcons.size]
 
-    /** Renders the schedule widget and returns the next epoch millis to refresh. */
-    fun renderSchedule(context: Context, views: RemoteViews): Long? {
+    fun courseIconBg(index: Int): Int = courseIconBgs[index % courseIconBgs.size]
+
+    fun formatTime(time: LocalTime?): String =
+        time?.format(displayTimeFormatter).orEmpty()
+
+    fun loadSchedule(context: Context): ScheduleSnapshot {
         val prefs = HomeWidgetPlugin.getData(context)
         val raw = prefs.getString(SCHEDULE_KEY, null)
         val today = LocalDate.now()
@@ -104,9 +104,7 @@ object WidgetRenderer {
                                 room = item.optString("room"),
                                 start = item.optInt("start"),
                                 section = section,
-                                startTime = parseTime(
-                                    item.optString("startTime"),
-                                ),
+                                startTime = parseTime(item.optString("startTime")),
                                 endTime = parseTime(item.optString("endTime")),
                             ),
                         )
@@ -120,85 +118,9 @@ object WidgetRenderer {
             course.endTime == null || nowTime.isBefore(course.endTime)
         }
 
-        var header =
-            "${today.monthValue}月${today.dayOfMonth}日 " +
-                weekdayLabels[today.dayOfWeek.value - 1]
-        if (synced && upcoming.isNotEmpty()) {
-            header += " · ${upcoming.size}节"
-            if (upcoming.size > scheduleRowIds.size) {
-                header += " +${upcoming.size - scheduleRowIds.size}"
-            }
-        }
-        views.setTextViewText(R.id.widget_schedule_date, header)
-
-        val emptyMessage = when {
-            !synced -> context.getString(R.string.widget_schedule_unsynced)
-            todays.isEmpty() -> context.getString(R.string.widget_schedule_empty)
-            upcoming.isEmpty() -> context.getString(R.string.widget_schedule_ended)
-            else -> null
-        }
-        if (emptyMessage != null) {
-            views.setViewVisibility(R.id.widget_schedule_empty, View.VISIBLE)
-            views.setTextViewText(R.id.widget_schedule_empty, emptyMessage)
-        } else {
-            views.setViewVisibility(R.id.widget_schedule_empty, View.GONE)
-        }
-
-        for (index in scheduleRowIds.indices) {
-            val visible = emptyMessage == null && index < upcoming.size
-            views.setViewVisibility(
-                scheduleRowIds[index],
-                if (visible) View.VISIBLE else View.GONE,
-            )
-            if (visible) {
-                val course = upcoming[index]
-                views.setInt(
-                    scheduleAccentIds[index],
-                    "setBackgroundColor",
-                    accentColors[index % accentColors.size],
-                )
-                views.setTextViewText(scheduleSectionIds[index], course.section)
-                val startText = course.startTime
-                    ?.format(displayTimeFormatter)
-                    .orEmpty()
-                val endText = course.endTime
-                    ?.format(displayTimeFormatter)
-                    .orEmpty()
-                views.setTextViewText(scheduleStartIds[index], startText)
-                views.setTextViewText(scheduleEndIds[index], endText)
-                views.setViewVisibility(
-                    scheduleStartIds[index],
-                    if (startText.isEmpty()) View.GONE else View.VISIBLE,
-                )
-                views.setViewVisibility(
-                    scheduleEndIds[index],
-                    if (endText.isEmpty()) View.GONE else View.VISIBLE,
-                )
-                views.setTextViewText(scheduleNameIds[index], course.name)
-                views.setTextViewText(scheduleRoomIds[index], course.room)
-                views.setViewVisibility(
-                    scheduleRoomIds[index],
-                    if (course.room.isEmpty()) View.GONE else View.VISIBLE,
-                )
-            }
-        }
-
-        views.setOnClickPendingIntent(
-            R.id.widget_schedule_root,
-            HomeWidgetLaunchIntent.getActivity(
-                context,
-                MainActivity::class.java,
-                Uri.parse("newclass://schedule"),
-            ),
-        )
-
         var nextRefresh: Long? = null
         val nowMillis = System.currentTimeMillis()
         val zone = ZoneId.systemDefault()
-
-        // Refresh at midnight even when the last course of the day ended hours
-        // ago. Relying only on ACTION_DATE_CHANGED can leave yesterday's
-        // timetable on screen after the clock rolls over.
         val nextMidnight = today.plusDays(1)
             .atStartOfDay(zone)
             .toInstant()
@@ -206,7 +128,6 @@ object WidgetRenderer {
         if (nextMidnight > nowMillis) {
             nextRefresh = nextMidnight
         }
-
         for (course in upcoming) {
             val end = course.endTime ?: continue
             val endMillis = today.atTime(end)
@@ -220,14 +141,56 @@ object WidgetRenderer {
                 nextRefresh = endMillis
             }
         }
-        return nextRefresh
+
+        return ScheduleSnapshot(synced, todays, upcoming, nextRefresh)
+    }
+
+    fun upcomingCourses(context: Context): List<WidgetCourse> =
+        loadSchedule(context).upcoming
+
+    /** Renders the static header/empty state; courses are provided by the RemoteViews list. */
+    fun renderSchedule(context: Context, views: RemoteViews): Long? {
+        val snapshot = loadSchedule(context)
+        val today = LocalDate.now()
+        var header =
+            "${today.monthValue}/${today.dayOfMonth} " +
+                weekdayLabels[today.dayOfWeek.value - 1]
+        if (snapshot.synced && snapshot.upcoming.isNotEmpty()) {
+            header += " · ${snapshot.upcoming.size}节"
+        }
+        views.setTextViewText(R.id.widget_schedule_date, header)
+
+        val emptyMessage = when {
+            !snapshot.synced -> context.getString(R.string.widget_schedule_unsynced)
+            snapshot.todays.isEmpty() -> context.getString(R.string.widget_schedule_empty)
+            snapshot.upcoming.isEmpty() -> context.getString(R.string.widget_schedule_ended)
+            else -> null
+        }
+        if (emptyMessage != null) {
+            views.setTextViewText(R.id.widget_schedule_empty_text, emptyMessage)
+            views.setViewVisibility(R.id.widget_schedule_empty, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_schedule_empty, View.GONE)
+        }
+
+        views.setOnClickPendingIntent(
+            R.id.widget_schedule_root,
+            HomeWidgetLaunchIntent.getActivity(
+                context,
+                MainActivity::class.java,
+                Uri.parse("newclass://schedule"),
+            ),
+        )
+        return snapshot.nextRefresh
     }
 
     fun renderElectricity(context: Context, views: RemoteViews) {
         val prefs = HomeWidgetPlugin.getData(context)
         val raw = prefs.getString(ELECTRICITY_KEY, null)
         var degree = context.getString(R.string.widget_value_placeholder)
-        var room = ""
+        var build = ""
+        var floor = ""
+        var roomName = ""
         var updated = context.getString(R.string.widget_electricity_none)
 
         if (raw != null) {
@@ -235,17 +198,41 @@ object WidgetRenderer {
                 val data = JSONObject(raw)
                 if (data.optString("state") == "ok") {
                     degree = data.optString("degree", degree)
-                    room = data.optString("room")
+                    val combined = data.optString("room")
+                    val parts = combined.split("·").map { it.trim() }
+                    build = data.optString("build")
+                        .ifBlank { parts.getOrNull(0).orEmpty() }
+                    floor = data.optString("floor")
+                        .ifBlank { parts.getOrNull(1).orEmpty() }
+                    roomName = data.optString("roomName")
+                        .ifBlank { parts.getOrNull(2).orEmpty() }
+                    if (roomName.isEmpty()) {
+                        roomName = parts.lastOrNull().orEmpty()
+                    }
                     val time = data.optString("updated")
                     if (time.isNotEmpty()) {
-                        updated = context.getString(R.string.widget_electricity_updated, time)
+                        updated = context.getString(
+                            R.string.widget_electricity_updated,
+                            time,
+                        )
                     }
                 }
             }
         }
 
         views.setTextViewText(R.id.widget_electricity_degree, degree)
-        views.setTextViewText(R.id.widget_electricity_room, room)
+        views.setTextViewText(
+            R.id.widget_electricity_build,
+            build.ifEmpty { "—" },
+        )
+        views.setTextViewText(
+            R.id.widget_electricity_floor,
+            floor.ifEmpty { "—" },
+        )
+        views.setTextViewText(
+            R.id.widget_electricity_room,
+            roomName.ifEmpty { "—" },
+        )
         views.setTextViewText(R.id.widget_electricity_updated, updated)
         views.setOnClickPendingIntent(
             R.id.widget_electricity_root,
@@ -254,6 +241,16 @@ object WidgetRenderer {
                 MainActivity::class.java,
                 Uri.parse("newclass://electricity"),
             ),
+        )
+        val refreshIntent = Intent(
+            context,
+            ElectricityWidgetProvider::class.java,
+        ).setAction(ElectricityWidgetProvider.ACTION_REFRESH)
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+            PendingIntent.FLAG_IMMUTABLE
+        views.setOnClickPendingIntent(
+            R.id.widget_electricity_refresh,
+            PendingIntent.getBroadcast(context, 2002, refreshIntent, flags),
         )
     }
 
@@ -268,13 +265,4 @@ object WidgetRenderer {
         }
         return false
     }
-
-    private data class WidgetCourse(
-        val name: String,
-        val room: String,
-        val start: Int,
-        val section: String,
-        val startTime: LocalTime?,
-        val endTime: LocalTime?,
-    )
 }

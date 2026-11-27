@@ -9,7 +9,7 @@
 - **外卖柜查询**：按订单号只读查询校内 AIKS 智能取餐柜，显示柜机、柜门、取件码与「在柜中/已取走」状态；本地保留最近 10 条历史订单，点击可快速复查，可一键清空；不提供开柜操作。
 - **桌面小部件**：Android 桌面提供「今日课表」与「寝室电费」两个 2×2 独立组件。今日课表显示当天尚未结束的课程，课程结束后自动隐藏；设置页可请求添加到桌面，小米/Redmi 需先允许「桌面快捷方式」特殊权限。不支持的桌面会给出手动添加步骤。电费由后台任务每 3 小时刷新一次。
 - **设置**：教务账号、密码、宿舍房间号、开学日期均可随时修改；设置页提供「检查更新」。
-- **自动更新**：启动时经 `v4.gh-proxy.org` 检查最新 Release，下载 APK 并校验 SHA-256 后交给系统安装器；设置页可手动检查。
+- **自动更新**：启动时经 `v4.gh-proxy.org` 检查最新 Release，更新弹窗展示该版本的新增与修复内容；下载 APK 并校验 SHA-256 后交给系统安装器，设置页可手动检查。
 
 应用只与学校系统及 AIKS 取餐柜查询服务通信：CAS / 教务系统用于课表，电费接口用于余额，AIKS 接口只接收订单号并返回取餐信息；更新检查只访问 GitHub（经 gh-proxy 加速）。没有自建服务器，没有统计、广告或追踪。
 
@@ -36,8 +36,8 @@ flutter build apk --release
 
 ## 自动发布与更新
 
-- 每次推送到 `main`，Actions 会以 `github.run_number` 作为 Android `versionCode` 构建，生成 `version.json`（版本名、版本号、大小、SHA-256），并更新固定 `latest` Release，资产为 `newclass.apk` 与 `version.json`。
-- 应用启动或点「检查更新」时，通过 `https://v4.gh-proxy.org/` 访问 `releases/download/latest/version.json`（失败时回退直连 GitHub）。远端 `versionCode` 大于当前版本时提示更新。
+- 每次推送到 `main`，Actions 会以 `github.run_number` 作为 Android `versionCode` 构建，从 `CHANGELOG.md` 提取当前版本更新说明，生成 `version.json`（版本名、版本号、大小、SHA-256、更新内容），并更新固定 `latest` Release。发布前必须在 `CHANGELOG.md` 写入对应版本段落，否则构建会失败。
+- 应用启动或点「检查更新」时，通过 `https://v4.gh-proxy.org/` 访问 `releases/download/latest/version.json`（失败时回退直连 GitHub）。远端 `versionCode` 大于当前版本时提示更新，并在弹窗中列出该版本的新增与修复内容。
 - 下载同样走 CDN 代理，完成后校验 SHA-256；若代理返回的文件校验不符，会自动改用 GitHub 直连重新下载。校验通过后调用系统安装器覆盖安装。
 - 更新包使用与当前版本相同的固定签名，因此无需卸载，数据会保留。
 - 只有 Android 支持应用内更新；iOS/Web 会提示不支持自动安装。
